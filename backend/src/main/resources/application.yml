@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:dojofit}
+    username: ${DB_USER:dojofit}
+    password: ${DB_PASS:dojofit}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-change-me-in-production-min-256-bits-long!!}
+  expiration-ms: 86400000
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
