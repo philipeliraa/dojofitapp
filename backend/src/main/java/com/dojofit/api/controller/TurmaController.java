@@ -46,4 +46,11 @@ public class TurmaController {
         turmaService.toggleAtivo(id);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        turmaService.delete(id);
+        return ResponseEntity.ok().build();
+    }
 }

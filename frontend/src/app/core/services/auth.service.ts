@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Usuario, Role } from '../models/usuario.model';
 
-interface AuthResponse {
+export interface AuthResponse {
   token: string;
   user: Usuario;
 }
@@ -33,27 +33,15 @@ export class AuthService {
   }
 
   login(email: string, senha: string) {
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, { email, senha })
-      .subscribe({
-        next: (res) => this.handleAuth(res),
-        error: (err) => console.error('Login failed', err),
-      });
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, { email, senha });
   }
 
   register(nome: string, email: string, senha: string) {
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, { nome, email, senha })
-      .subscribe({
-        next: (res) => this.handleAuth(res),
-        error: (err) => console.error('Register failed', err),
-      });
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, { nome, email, senha });
   }
 
   loginWithGoogle(idToken: string) {
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/google`, { idToken })
-      .subscribe({
-        next: (res) => this.handleAuth(res),
-        error: (err) => console.error('Google login failed', err),
-      });
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/google`, { idToken });
   }
 
   logout() {
@@ -66,7 +54,7 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
-  private handleAuth(response: AuthResponse) {
+  handleAuth(response: AuthResponse) {
     localStorage.setItem('token', response.token);
     localStorage.setItem('user', JSON.stringify(response.user));
     this.currentUser.set(response.user);

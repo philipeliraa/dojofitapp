@@ -11,8 +11,8 @@ import { Usuario, Role } from '../../../core/models/usuario.model';
   template: `
     <div>
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-gray-900">Usuarios</h2>
-        <button (click)="showForm.set(!showForm())" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+        <h2 class="text-xl font-semibold text-brand-navy">Usuarios</h2>
+        <button (click)="showForm.set(!showForm())" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
           {{ showForm() ? 'Cancelar' : 'Novo Usuario' }}
         </button>
       </div>
@@ -23,30 +23,30 @@ import { Usuario, Role } from '../../../core/models/usuario.model';
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
               <input type="text" [(ngModel)]="form.nome" name="nome" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input type="email" [(ngModel)]="form.email" name="email" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
               <input type="password" [(ngModel)]="form.senha" name="senha" [required]="!editingId"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue"
                 placeholder="{{ editingId ? 'Deixe vazio para manter' : '' }}" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Perfil</label>
               <select [(ngModel)]="form.role" name="role" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
                 <option value="ALUNO">Aluno</option>
                 <option value="PROFESSOR">Professor</option>
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
             <div class="sm:col-span-2">
-              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+              <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
                 {{ editingId ? 'Atualizar' : 'Criar' }}
               </button>
             </div>
@@ -77,10 +77,11 @@ import { Usuario, Role } from '../../../core/models/usuario.model';
                   </span>
                 </td>
                 <td class="px-4 py-3 text-right space-x-2">
-                  <button (click)="edit(user)" class="text-blue-600 hover:underline">Editar</button>
+                  <button (click)="edit(user)" class="text-brand-blue hover:underline">Editar</button>
                   <button (click)="toggleAtivo(user)" class="text-gray-500 hover:underline">
                     {{ user.ativo ? 'Desativar' : 'Ativar' }}
                   </button>
+                  <button (click)="delete(user)" class="text-brand-alert hover:underline">Excluir</button>
                 </td>
               </tr>
             }
@@ -128,6 +129,14 @@ export class UsuarioListComponent implements OnInit {
 
   toggleAtivo(user: Usuario) {
     this.http.patch(`${environment.apiUrl}/admin/usuarios/${user.id}/toggle-ativo`, {}).subscribe(() => this.load());
+  }
+
+  delete(user: Usuario) {
+    if (!confirm(`Excluir o usuario "${user.nome}"?`)) return;
+    this.http.delete(`${environment.apiUrl}/admin/usuarios/${user.id}`).subscribe({
+      next: () => this.load(),
+      error: (err) => alert(err.error?.message || 'Erro ao excluir usuario.')
+    });
   }
 
   resetForm() {

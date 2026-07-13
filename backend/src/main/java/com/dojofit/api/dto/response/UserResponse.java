@@ -6,14 +6,16 @@ public record UserResponse(
         Long id,
         String nome,
         String email,
-        String role
+        String role,
+        Boolean ativo
 ) {
     public static UserResponse from(Usuario usuario) {
         return new UserResponse(
                 usuario.getId(),
                 usuario.getNome(),
                 usuario.getEmail(),
-                usuario.getRole().name()
+                usuario.getRole().name(),
+                usuario.getAtivo()
         );
     }
 }

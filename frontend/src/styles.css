@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand-navy: #042C53;
+  --color-brand-navy-light: #B5D4F4;
+  --color-brand-blue: #378ADD;
+  --color-brand-alert: #E24B4A;
+  --color-brand-bg: #FAFAF8;
+
+  --color-belt-white: #FAFAF8;
+  --color-belt-blue: #378ADD;
+  --color-belt-purple: #7F77DD;
+  --color-belt-brown: #993C1D;
+  --color-belt-black: #1C1C1A;
+}

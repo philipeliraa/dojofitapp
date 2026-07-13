@@ -44,6 +44,11 @@ public class PlanoService {
         planoRepository.save(plano);
     }
 
+    public void delete(Long id) {
+        var plano = getPlano(id);
+        planoRepository.delete(plano);
+    }
+
     private Plano getPlano(Long id) {
         return planoRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Plano nao encontrado"));
     }

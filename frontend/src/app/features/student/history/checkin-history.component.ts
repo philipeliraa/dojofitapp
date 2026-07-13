@@ -8,7 +8,7 @@ import { Checkin } from '../../../core/models/checkin.model';
   standalone: true,
   template: `
     <div>
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">Historico de Check-ins</h2>
+      <h2 class="text-xl font-semibold text-brand-navy mb-4">Historico de Check-ins</h2>
 
       @if (loading()) {
         <div class="text-center py-8 text-gray-400">Carregando...</div>

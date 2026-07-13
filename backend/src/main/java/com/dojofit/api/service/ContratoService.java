@@ -10,12 +10,14 @@ import com.dojofit.api.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ContratoService {
 
     private final ContratoRepository contratoRepository;
@@ -34,6 +36,7 @@ public class ContratoService {
         return contratoRepository.findByAlunoId(alunoId).stream().map(ContratoResponse::from).toList();
     }
 
+    @Transactional
     public ContratoResponse create(ContratoRequest request) {
         var aluno = usuarioRepository.findById(request.alunoId())
                 .orElseThrow(() -> new EntityNotFoundException("Aluno nao encontrado"));
@@ -50,6 +53,7 @@ public class ContratoService {
         return ContratoResponse.from(contratoRepository.save(contrato));
     }
 
+    @Transactional
     public ContratoResponse update(Long id, ContratoRequest request) {
         var contrato = getContrato(id);
         var plano = planoRepository.findById(request.planoId())
@@ -67,6 +71,12 @@ public class ContratoService {
         }
 
         return ContratoResponse.from(contratoRepository.save(contrato));
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        var contrato = getContrato(id);
+        contratoRepository.delete(contrato);
     }
 
     private Contrato getContrato(Long id) {

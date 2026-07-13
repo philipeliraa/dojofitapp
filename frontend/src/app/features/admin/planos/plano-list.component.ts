@@ -11,8 +11,8 @@ import { Plano } from '../../../core/models/plano.model';
   template: `
     <div>
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-gray-900">Planos</h2>
-        <button (click)="showForm.set(!showForm())" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+        <h2 class="text-xl font-semibold text-brand-navy">Planos</h2>
+        <button (click)="showForm.set(!showForm())" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
           {{ showForm() ? 'Cancelar' : 'Novo Plano' }}
         </button>
       </div>
@@ -23,14 +23,14 @@ import { Plano } from '../../../core/models/plano.model';
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
               <input type="text" [(ngModel)]="form.nome" name="nome" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Limite Semanal (vazio = ilimitado)</label>
               <input type="number" [(ngModel)]="form.limiteSemanal" name="limiteSemanal"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+            <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
               {{ editingId ? 'Atualizar' : 'Criar' }}
             </button>
           </form>
@@ -58,10 +58,11 @@ import { Plano } from '../../../core/models/plano.model';
                   </span>
                 </td>
                 <td class="px-4 py-3 text-right space-x-2">
-                  <button (click)="edit(plano)" class="text-blue-600 hover:underline">Editar</button>
+                  <button (click)="edit(plano)" class="text-brand-blue hover:underline">Editar</button>
                   <button (click)="toggleAtivo(plano)" class="text-gray-500 hover:underline">
                     {{ plano.ativo ? 'Desativar' : 'Ativar' }}
                   </button>
+                  <button (click)="delete(plano)" class="text-brand-alert hover:underline">Excluir</button>
                 </td>
               </tr>
             }
@@ -107,6 +108,14 @@ export class PlanoListComponent implements OnInit {
 
   toggleAtivo(plano: Plano) {
     this.http.patch(`${environment.apiUrl}/planos/${plano.id}/toggle`, {}).subscribe(() => this.load());
+  }
+
+  delete(plano: Plano) {
+    if (!confirm(`Excluir o plano "${plano.nome}"?`)) return;
+    this.http.delete(`${environment.apiUrl}/planos/${plano.id}`).subscribe({
+      next: () => this.load(),
+      error: (err) => alert(err.error?.message || 'Erro ao excluir plano.')
+    });
   }
 
   resetForm() {

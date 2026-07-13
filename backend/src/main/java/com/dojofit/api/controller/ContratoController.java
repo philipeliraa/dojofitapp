@@ -42,4 +42,11 @@ public class ContratoController {
     public ContratoResponse update(@PathVariable Long id, @Valid @RequestBody ContratoRequest request) {
         return contratoService.update(id, request);
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        contratoService.delete(id);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -64,6 +64,11 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    public void delete(Long id) {
+        var usuario = getUsuario(id);
+        usuarioRepository.delete(usuario);
+    }
+
     private Usuario getUsuario(Long id) {
         return usuarioRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Usuario nao encontrado"));
     }

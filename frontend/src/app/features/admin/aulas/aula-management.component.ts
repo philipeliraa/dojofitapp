@@ -11,9 +11,9 @@ import { Aula } from '../../../core/models/aula.model';
   template: `
     <div>
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-gray-900">Aulas</h2>
+        <h2 class="text-xl font-semibold text-brand-navy">Aulas</h2>
         <div class="flex gap-2">
-          <button (click)="generate()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+          <button (click)="generate()" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
             Gerar Semana
           </button>
         </div>
@@ -22,7 +22,7 @@ import { Aula } from '../../../core/models/aula.model';
       <div class="mb-4 flex gap-2 items-center">
         <label class="text-sm font-medium text-gray-700">Data:</label>
         <input type="date" [(ngModel)]="selectedDate" (change)="load()"
-          class="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+          class="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue text-sm" />
       </div>
 
       <div class="space-y-3">
@@ -38,7 +38,7 @@ import { Aula } from '../../../core/models/aula.model';
                 @if (aula.cancelada) {
                   <span class="text-red-500 text-sm font-medium">Cancelada</span>
                 } @else {
-                  <button (click)="cancel(aula.id)" class="text-red-500 text-sm hover:underline">Cancelar</button>
+                  <button (click)="cancel(aula.id)" class="text-brand-alert text-sm hover:underline">Cancelar</button>
                 }
               </div>
             </div>

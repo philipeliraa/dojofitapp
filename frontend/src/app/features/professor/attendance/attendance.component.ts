@@ -11,7 +11,7 @@ import { Checkin } from '../../../core/models/checkin.model';
   imports: [FormsModule],
   template: `
     <div>
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">Chamada</h2>
+      <h2 class="text-xl font-semibold text-brand-navy mb-4">Chamada</h2>
 
       <div class="space-y-2 mb-6">
         @for (aula of aulas(); track aula.id) {
@@ -19,7 +19,7 @@ import { Checkin } from '../../../core/models/checkin.model';
             (click)="selectAula(aula)"
             class="w-full bg-white rounded-lg shadow-sm p-3 text-left hover:bg-gray-50 transition"
             [class.ring-2]="selectedAula()?.id === aula.id"
-            [class.ring-blue-500]="selectedAula()?.id === aula.id">
+            [class.ring-brand-blue]="selectedAula()?.id === aula.id">
             <p class="font-medium text-gray-900 text-sm">{{ aula.turmaNome ?? 'Avulsa' }}</p>
             <p class="text-xs text-gray-500">{{ aula.horaInicio }} - {{ aula.horaFim }} | {{ aula.checkinsConfirmados }}/{{ aula.capacidadeMaxima }}</p>
           </button>
@@ -38,8 +38,8 @@ import { Checkin } from '../../../core/models/checkin.model';
           <!-- Manual check-in -->
           <div class="flex gap-2 mb-4">
             <input type="number" [(ngModel)]="manualAlunoId" placeholder="ID do aluno"
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-            <button (click)="manualCheckin()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-blue" />
+            <button (click)="manualCheckin()" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
               Check-in Manual
             </button>
           </div>
@@ -58,7 +58,7 @@ import { Checkin } from '../../../core/models/checkin.model';
                     {{ checkin.status }}
                   </span>
                   @if (checkin.status === 'LISTA_ESPERA') {
-                    <button (click)="liberarExcecao(checkin.id)" class="text-xs text-blue-600 hover:underline">
+                    <button (click)="liberarExcecao(checkin.id)" class="text-xs text-brand-blue hover:underline">
                       Liberar
                     </button>
                   }

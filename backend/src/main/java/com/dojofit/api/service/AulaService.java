@@ -21,6 +21,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AulaService {
 
     private final AulaRepository aulaRepository;
@@ -69,6 +70,7 @@ public class AulaService {
         }
     }
 
+    @Transactional
     public void cancelAula(Long id) {
         var aula = getAula(id);
         aula.setCancelada(true);

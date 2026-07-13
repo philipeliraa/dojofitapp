@@ -13,8 +13,8 @@ import { Plano } from '../../../core/models/plano.model';
   template: `
     <div>
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-gray-900">Contratos</h2>
-        <button (click)="showForm.set(!showForm())" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+        <h2 class="text-xl font-semibold text-brand-navy">Contratos</h2>
+        <button (click)="showForm.set(!showForm())" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
           {{ showForm() ? 'Cancelar' : 'Novo Contrato' }}
         </button>
       </div>
@@ -25,33 +25,38 @@ import { Plano } from '../../../core/models/plano.model';
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Aluno</label>
               <select [(ngModel)]="form.alunoId" name="alunoId" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
+                <option [value]="null" disabled>Selecione um aluno</option>
                 @for (aluno of alunos(); track aluno.id) {
-                  <option [value]="aluno.id">{{ aluno.nome }}</option>
+                  <option [ngValue]="aluno.id">{{ aluno.nome }}</option>
                 }
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Plano</label>
               <select [(ngModel)]="form.planoId" name="planoId" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
+                <option [value]="null" disabled>Selecione um plano</option>
                 @for (plano of planos(); track plano.id) {
-                  <option [value]="plano.id">{{ plano.nome }}</option>
+                  <option [ngValue]="plano.id">{{ plano.nome }}</option>
                 }
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Data Inicio</label>
               <input type="date" [(ngModel)]="form.dataInicio" name="dataInicio" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Data Validade</label>
               <input type="date" [(ngModel)]="form.dataValidade" name="dataValidade" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div class="sm:col-span-2">
-              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+              @if (errorMessage()) {
+                <div class="mb-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{{ errorMessage() }}</div>
+              }
+              <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
                 {{ editingId ? 'Atualizar' : 'Criar' }}
               </button>
             </div>
@@ -83,8 +88,9 @@ import { Plano } from '../../../core/models/plano.model';
                     {{ contrato.status }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-right">
-                  <button (click)="edit(contrato)" class="text-blue-600 hover:underline">Editar</button>
+                <td class="px-4 py-3 text-right space-x-2">
+                  <button (click)="edit(contrato)" class="text-brand-blue hover:underline">Editar</button>
+                  <button (click)="delete(contrato)" class="text-brand-alert hover:underline">Excluir</button>
                 </td>
               </tr>
             }
@@ -99,6 +105,7 @@ export class ContratoListComponent implements OnInit {
   alunos = signal<Usuario[]>([]);
   planos = signal<Plano[]>([]);
   showForm = signal(false);
+  errorMessage = signal('');
   editingId: number | null = null;
   form = { alunoId: null as number | null, planoId: null as number | null, dataInicio: '', dataValidade: '' };
 
@@ -115,14 +122,27 @@ export class ContratoListComponent implements OnInit {
   }
 
   save() {
+    this.errorMessage.set('');
+
+    if (!this.form.alunoId || !this.form.planoId || !this.form.dataInicio || !this.form.dataValidade) {
+      this.errorMessage.set('Preencha todos os campos obrigatorios.');
+      return;
+    }
+
     const body = { ...this.form };
     const req = this.editingId
       ? this.http.put(`${environment.apiUrl}/contratos/${this.editingId}`, body)
       : this.http.post(`${environment.apiUrl}/contratos`, body);
 
-    req.subscribe(() => {
-      this.resetForm();
-      this.load();
+    req.subscribe({
+      next: () => {
+        this.resetForm();
+        this.load();
+      },
+      error: (err) => {
+        const msg = err.error?.message || err.error?.error || 'Erro ao salvar contrato. Tente novamente.';
+        this.errorMessage.set(msg);
+      }
     });
   }
 
@@ -130,6 +150,14 @@ export class ContratoListComponent implements OnInit {
     this.editingId = contrato.id;
     this.form = { alunoId: contrato.alunoId, planoId: contrato.planoId, dataInicio: contrato.dataInicio, dataValidade: contrato.dataValidade };
     this.showForm.set(true);
+  }
+
+  delete(contrato: Contrato) {
+    if (!confirm(`Excluir o contrato de "${contrato.alunoNome}"?`)) return;
+    this.http.delete(`${environment.apiUrl}/contratos/${contrato.id}`).subscribe({
+      next: () => this.load(),
+      error: (err) => alert(err.error?.message || 'Erro ao excluir contrato.')
+    });
   }
 
   resetForm() {

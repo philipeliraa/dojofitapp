@@ -8,7 +8,7 @@ import { Contrato } from '../../../core/models/contrato.model';
   standalone: true,
   template: `
     <div>
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">Meu Contrato</h2>
+      <h2 class="text-xl font-semibold text-brand-navy mb-4">Meu Contrato</h2>
 
       @if (loading()) {
         <div class="text-center py-8 text-gray-400">Carregando...</div>
@@ -44,7 +44,7 @@ import { Contrato } from '../../../core/models/contrato.model';
                     <span class="font-medium">{{ weekInfo()!.count }}</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full transition-all" [style.width.%]="progressPercent()"></div>
+                    <div class="bg-brand-blue h-2 rounded-full transition-all" [style.width.%]="progressPercent()"></div>
                   </div>
                 </div>
               }

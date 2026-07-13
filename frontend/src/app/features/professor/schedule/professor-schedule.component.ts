@@ -8,12 +8,12 @@ import { Aula } from '../../../core/models/aula.model';
   standalone: true,
   template: `
     <div>
-      <h2 class="text-xl font-semibold text-gray-900 mb-4">Grade de Horarios</h2>
+      <h2 class="text-xl font-semibold text-brand-navy mb-4">Grade de Horarios</h2>
 
       <div class="flex items-center justify-between mb-4">
-        <button (click)="prevWeek()" class="text-blue-600 text-sm hover:underline">← Anterior</button>
+        <button (click)="prevWeek()" class="text-brand-blue text-sm hover:underline">← Anterior</button>
         <span class="text-sm font-medium text-gray-700">{{ weekLabel }}</span>
-        <button (click)="nextWeek()" class="text-blue-600 text-sm hover:underline">Proxima →</button>
+        <button (click)="nextWeek()" class="text-brand-blue text-sm hover:underline">Proxima →</button>
       </div>
 
       @for (day of weekDays; track day.date) {

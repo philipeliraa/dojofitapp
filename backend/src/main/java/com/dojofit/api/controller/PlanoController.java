@@ -46,4 +46,11 @@ public class PlanoController {
         planoService.toggleAtivo(id);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        planoService.delete(id);
+        return ResponseEntity.ok().build();
+    }
 }

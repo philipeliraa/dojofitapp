@@ -20,12 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CheckinService {
 
     private final CheckinRepository checkinRepository;
@@ -40,21 +40,13 @@ public class CheckinService {
         var aluno = usuarioRepository.findById(alunoId)
                 .orElseThrow(() -> new EntityNotFoundException("Aluno nao encontrado"));
 
-        // Rule 1: Aula nao cancelada
+        // Aula nao cancelada
         if (aula.getCancelada()) {
             throw new BusinessException("Esta aula foi cancelada");
         }
 
-        // Rule 1: Check-in apenas no dia da aula e antes do fim
+        // Contrato ativo e valido
         LocalDate today = LocalDate.now();
-        if (!aula.getData().equals(today)) {
-            throw new BusinessException("Check-in so e permitido no dia da aula");
-        }
-        if (LocalTime.now().isAfter(aula.getHoraFim())) {
-            throw new BusinessException("O horario da aula ja encerrou");
-        }
-
-        // Rule 7: Contrato ativo e valido
         Contrato contrato = contratoRepository.findByAlunoIdAndStatus(alunoId, StatusContrato.ATIVO)
                 .orElseThrow(() -> new BusinessException("Voce nao possui contrato ativo. Procure o administrador"));
 
@@ -62,12 +54,12 @@ public class CheckinService {
             throw new BusinessException("Seu contrato esta expirado. Procure o administrador");
         }
 
-        // Rule 6: Sem check-in duplicado
+        // Sem check-in duplicado na mesma aula
         if (checkinRepository.findByAulaIdAndAlunoId(aulaId, alunoId).isPresent()) {
             throw new BusinessException("Voce ja fez check-in nesta aula");
         }
 
-        // Rule 2/3: Limite semanal
+        // Limite semanal baseado no plano
         boolean limiteExcedido = false;
         if (contrato.getPlano().getLimiteSemanal() != null) {
             LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -76,7 +68,7 @@ public class CheckinService {
 
             if (checkinsNaSemana >= contrato.getPlano().getLimiteSemanal()) {
                 if (tipo == TipoCheckin.PROPRIO) {
-                    throw new BusinessException("Limite semanal de " + contrato.getPlano().getLimiteSemanal() + " aulas atingido. Peca liberacao ao professor");
+                    throw new BusinessException("Limite semanal de " + contrato.getPlano().getLimiteSemanal() + " check-ins atingido. Peca liberacao ao professor");
                 }
                 limiteExcedido = true;
             }
@@ -160,6 +152,20 @@ public class CheckinService {
         LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate sunday = monday.plusDays(6);
         return checkinRepository.countCheckinsInWeek(alunoId, monday, sunday);
+    }
+
+    public java.util.Map<String, Object> getResumoSemanal(Long alunoId) {
+        long count = countCheckinsNaSemana(alunoId);
+        var result = new java.util.HashMap<String, Object>();
+        result.put("count", count);
+
+        contratoRepository.findByAlunoIdAndStatus(alunoId, StatusContrato.ATIVO)
+                .ifPresent(contrato -> {
+                    Integer limite = contrato.getPlano().getLimiteSemanal();
+                    result.put("limite", limite);
+                });
+
+        return result;
     }
 
     private void promoteFromWaitingList(Long aulaId) {

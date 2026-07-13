@@ -9,16 +9,19 @@ import com.dojofit.api.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TurmaService {
 
     private final TurmaRepository turmaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AulaService aulaService;
 
     public List<TurmaResponse> findAll() {
         return turmaRepository.findAll().stream().map(TurmaResponse::from).toList();
@@ -28,6 +31,7 @@ public class TurmaService {
         return TurmaResponse.from(getTurma(id));
     }
 
+    @Transactional
     public TurmaResponse create(TurmaRequest request) {
         var professor = usuarioRepository.findById(request.professorId())
                 .orElseThrow(() -> new EntityNotFoundException("Professor nao encontrado"));
@@ -40,9 +44,12 @@ public class TurmaService {
         turma.setCapacidadeMaxima(request.capacidadeMaxima());
         turma.setProfessor(professor);
 
-        return TurmaResponse.from(turmaRepository.save(turma));
+        var saved = turmaRepository.save(turma);
+        aulaService.generateAulas(4);
+        return TurmaResponse.from(saved);
     }
 
+    @Transactional
     public TurmaResponse update(Long id, TurmaRequest request) {
         var turma = getTurma(id);
         var professor = usuarioRepository.findById(request.professorId())
@@ -58,10 +65,17 @@ public class TurmaService {
         return TurmaResponse.from(turmaRepository.save(turma));
     }
 
+    @Transactional
     public void toggleAtivo(Long id) {
         var turma = getTurma(id);
         turma.setAtivo(!turma.getAtivo());
         turmaRepository.save(turma);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        var turma = getTurma(id);
+        turmaRepository.delete(turma);
     }
 
     private Turma getTurma(Long id) {

@@ -7,7 +7,7 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
   template: `
     <div>
-      <h2 class="text-2xl font-semibold text-gray-900 mb-6">Dashboard</h2>
+      <h2 class="text-2xl font-semibold text-brand-navy mb-6">Dashboard</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <a routerLink="/admin/planos" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
           <h3 class="font-medium text-gray-900">Planos</h3>

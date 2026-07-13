@@ -8,12 +8,12 @@ import { Aula } from '../../../core/models/aula.model';
   standalone: true,
   template: `
     <div>
-      <h2 class="text-xl font-semibold text-gray-900 mb-2">Aulas de Hoje</h2>
+      <h2 class="text-xl font-semibold text-brand-navy mb-2">Aulas de Hoje</h2>
       <p class="text-sm text-gray-500 mb-4">{{ todayFormatted }}</p>
 
       @if (weekInfo()) {
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm">
-          Check-ins esta semana: <strong>{{ weekInfo()!.count }}</strong>
+        <div class="bg-brand-navy-light/20 border border-brand-navy-light rounded-lg p-3 mb-4 text-sm">
+          Check-ins esta semana: <strong>{{ weekInfo()!.count }}</strong>{{ weekInfo()!.limite ? ' / ' + weekInfo()!.limite : '' }}
         </div>
       }
 
@@ -41,15 +41,19 @@ import { Aula } from '../../../core/models/aula.model';
 
               @if (aula.cancelada) {
                 <span class="text-red-500 text-sm font-medium">Aula Cancelada</span>
-              } @else if (checkedIn().has(aula.id)) {
-                <div class="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+              } @else if (checkinMap().has(aula.id)) {
+                <div class="bg-green-50 border border-green-200 rounded-lg p-2 flex items-center justify-between">
                   <span class="text-green-700 text-sm font-medium">Check-in realizado!</span>
+                  <button (click)="cancelCheckin(aula.id)"
+                    class="text-brand-alert text-sm hover:underline">
+                    Desfazer
+                  </button>
                 </div>
               } @else {
                 <button
                   (click)="doCheckin(aula.id)"
                   [disabled]="checkingIn()"
-                  class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium text-lg hover:bg-blue-700 disabled:opacity-50 transition active:scale-95">
+                  class="w-full bg-brand-blue text-white py-3 rounded-lg font-medium text-lg hover:bg-brand-blue/90 disabled:opacity-50 transition active:scale-95">
                   {{ checkingIn() ? 'Confirmando...' : 'Fazer Check-in' }}
                 </button>
               }
@@ -60,7 +64,7 @@ import { Aula } from '../../../core/models/aula.model';
 
       @if (message()) {
         <div class="fixed bottom-20 left-4 right-4 p-3 rounded-lg text-center text-sm font-medium z-50"
-             [class]="messageType() === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
+             [class]="messageType() === 'success' ? 'bg-green-500 text-white' : 'bg-brand-alert text-white'">
           {{ message() }}
         </div>
       }
@@ -71,20 +75,21 @@ export class StudentHomeComponent implements OnInit {
   aulas = signal<Aula[]>([]);
   loading = signal(true);
   checkingIn = signal(false);
-  checkedIn = signal(new Set<number>());
+  checkinMap = signal<Map<number, number>>(new Map()); // aulaId -> checkinId
   message = signal('');
   messageType = signal<'success' | 'error'>('success');
-  weekInfo = signal<{ count: number } | null>(null);
+  weekInfo = signal<{ count: number; limite?: number } | null>(null);
   todayFormatted = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  today = new Date().toISOString().split('T')[0];
 
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
-    const today = new Date().toISOString().split('T')[0];
-    this.http.get<Aula[]>(`${environment.apiUrl}/aulas?data=${today}`).subscribe({
+    this.http.get<Aula[]>(`${environment.apiUrl}/aulas?data=${this.today}`).subscribe({
       next: data => { this.aulas.set(data); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
+    this.loadCheckins();
     this.http.get<{ count: number }>(`${environment.apiUrl}/checkins/semana`).subscribe(data => this.weekInfo.set(data));
   }
 
@@ -93,24 +98,53 @@ export class StudentHomeComponent implements OnInit {
     this.http.post<any>(`${environment.apiUrl}/checkins`, { aulaId }).subscribe({
       next: (res) => {
         this.checkingIn.set(false);
-        const updated = new Set(this.checkedIn());
-        updated.add(aulaId);
-        this.checkedIn.set(updated);
+        const updated = new Map(this.checkinMap());
+        updated.set(aulaId, res.id);
+        this.checkinMap.set(updated);
 
         if (res.status === 'LISTA_ESPERA') {
           this.showMessage('Aula lotada. Voce entrou na lista de espera.', 'error');
         } else {
           this.showMessage('Check-in confirmado!', 'success');
         }
-        // Refresh week count
-        this.http.get<{ count: number }>(`${environment.apiUrl}/checkins/semana`).subscribe(data => this.weekInfo.set(data));
+        this.refreshAulas();
       },
       error: (err) => {
         this.checkingIn.set(false);
-        const msg = err.error?.error ?? 'Erro ao fazer check-in';
+        const msg = err.error?.message || err.error?.error || 'Erro ao fazer check-in';
         this.showMessage(msg, 'error');
       },
     });
+  }
+
+  cancelCheckin(aulaId: number) {
+    const checkinId = this.checkinMap().get(aulaId);
+    if (!checkinId) return;
+    this.http.delete(`${environment.apiUrl}/checkins/${checkinId}`).subscribe({
+      next: () => {
+        const updated = new Map(this.checkinMap());
+        updated.delete(aulaId);
+        this.checkinMap.set(updated);
+        this.showMessage('Check-in desfeito.', 'success');
+        this.refreshAulas();
+      },
+      error: (err) => {
+        this.showMessage(err.error?.message || 'Erro ao desfazer check-in.', 'error');
+      }
+    });
+  }
+
+  private loadCheckins() {
+    this.http.get<any[]>(`${environment.apiUrl}/checkins/historico`).subscribe(checkins => {
+      const map = new Map<number, number>();
+      checkins.filter(c => c.aulaData === this.today).forEach(c => map.set(c.aulaId, c.id));
+      this.checkinMap.set(map);
+    });
+  }
+
+  private refreshAulas() {
+    this.http.get<Aula[]>(`${environment.apiUrl}/aulas?data=${this.today}`).subscribe(data => this.aulas.set(data));
+    this.http.get<{ count: number }>(`${environment.apiUrl}/checkins/semana`).subscribe(data => this.weekInfo.set(data));
   }
 
   private showMessage(text: string, type: 'success' | 'error') {

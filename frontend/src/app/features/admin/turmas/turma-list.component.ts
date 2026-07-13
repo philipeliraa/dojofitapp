@@ -12,8 +12,8 @@ import { Usuario } from '../../../core/models/usuario.model';
   template: `
     <div>
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-gray-900">Turmas</h2>
-        <button (click)="showForm.set(!showForm())" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+        <h2 class="text-xl font-semibold text-brand-navy">Turmas</h2>
+        <button (click)="showForm.set(!showForm())" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
           {{ showForm() ? 'Cancelar' : 'Nova Turma' }}
         </button>
       </div>
@@ -24,12 +24,12 @@ import { Usuario } from '../../../core/models/usuario.model';
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
               <input type="text" [(ngModel)]="form.nome" name="nome" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Dia da Semana</label>
               <select [(ngModel)]="form.diaSemana" name="diaSemana" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
                 @for (dia of dias; track dia) {
                   <option [value]="dia">{{ diaLabel(dia) }}</option>
                 }
@@ -38,29 +38,33 @@ import { Usuario } from '../../../core/models/usuario.model';
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Hora Inicio</label>
               <input type="time" [(ngModel)]="form.horaInicio" name="horaInicio" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Hora Fim</label>
               <input type="time" [(ngModel)]="form.horaFim" name="horaFim" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Capacidade Maxima</label>
               <input type="number" [(ngModel)]="form.capacidadeMaxima" name="capacidadeMaxima" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Professor</label>
               <select [(ngModel)]="form.professorId" name="professorId" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
+                <option [value]="null" disabled>Selecione um professor</option>
                 @for (prof of professores(); track prof.id) {
-                  <option [value]="prof.id">{{ prof.nome }}</option>
+                  <option [ngValue]="prof.id">{{ prof.nome }}</option>
                 }
               </select>
             </div>
             <div class="sm:col-span-2">
-              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+              @if (errorMessage()) {
+                <div class="mb-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{{ errorMessage() }}</div>
+              }
+              <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
                 {{ editingId ? 'Atualizar' : 'Criar' }}
               </button>
             </div>
@@ -89,10 +93,11 @@ import { Usuario } from '../../../core/models/usuario.model';
                 <td class="px-4 py-3">{{ turma.capacidadeMaxima }}</td>
                 <td class="px-4 py-3">{{ turma.professorNome }}</td>
                 <td class="px-4 py-3 text-right space-x-2">
-                  <button (click)="edit(turma)" class="text-blue-600 hover:underline">Editar</button>
+                  <button (click)="edit(turma)" class="text-brand-blue hover:underline">Editar</button>
                   <button (click)="toggleAtivo(turma)" class="text-gray-500 hover:underline">
                     {{ turma.ativo ? 'Desativar' : 'Ativar' }}
                   </button>
+                  <button (click)="delete(turma)" class="text-brand-alert hover:underline">Excluir</button>
                 </td>
               </tr>
             }
@@ -106,6 +111,7 @@ export class TurmaListComponent implements OnInit {
   turmas = signal<Turma[]>([]);
   professores = signal<Usuario[]>([]);
   showForm = signal(false);
+  errorMessage = signal('');
   editingId: number | null = null;
   dias: DiaSemana[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
   form = { nome: '', diaSemana: 'MON' as DiaSemana, horaInicio: '', horaFim: '', capacidadeMaxima: 20, professorId: null as number | null };
@@ -122,14 +128,27 @@ export class TurmaListComponent implements OnInit {
   }
 
   save() {
+    this.errorMessage.set('');
+
+    if (!this.form.nome || !this.form.horaInicio || !this.form.horaFim || !this.form.professorId) {
+      this.errorMessage.set('Preencha todos os campos obrigatorios.');
+      return;
+    }
+
     const body = { ...this.form };
     const req = this.editingId
       ? this.http.put(`${environment.apiUrl}/turmas/${this.editingId}`, body)
       : this.http.post(`${environment.apiUrl}/turmas`, body);
 
-    req.subscribe(() => {
-      this.resetForm();
-      this.load();
+    req.subscribe({
+      next: () => {
+        this.resetForm();
+        this.load();
+      },
+      error: (err) => {
+        const msg = err.error?.message || err.error?.error || 'Erro ao salvar turma. Tente novamente.';
+        this.errorMessage.set(msg);
+      }
     });
   }
 
@@ -148,6 +167,14 @@ export class TurmaListComponent implements OnInit {
 
   toggleAtivo(turma: Turma) {
     this.http.patch(`${environment.apiUrl}/turmas/${turma.id}/toggle`, {}).subscribe(() => this.load());
+  }
+
+  delete(turma: Turma) {
+    if (!confirm(`Excluir a turma "${turma.nome}"?`)) return;
+    this.http.delete(`${environment.apiUrl}/turmas/${turma.id}`).subscribe({
+      next: () => this.load(),
+      error: (err) => alert(err.error?.message || 'Erro ao excluir turma.')
+    });
   }
 
   resetForm() {

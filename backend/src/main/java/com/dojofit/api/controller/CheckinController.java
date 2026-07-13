@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -60,8 +61,8 @@ public class CheckinController {
     }
 
     @GetMapping("/semana")
-    public Map<String, Long> checkinsSemana(Authentication auth) {
+    public Map<String, Object> checkinsSemana(Authentication auth) {
         Long userId = (Long) auth.getPrincipal();
-        return Map.of("count", checkinService.countCheckinsNaSemana(userId));
+        return checkinService.getResumoSemanal(userId);
     }
 }
