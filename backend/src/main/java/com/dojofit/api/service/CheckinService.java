@@ -34,6 +34,7 @@ public class CheckinService {
     private final ListaEsperaRepository listaEsperaRepository;
     private final UsuarioRepository usuarioRepository;
     private final AulaService aulaService;
+    private final AlunoStreakCache streakCache;
 
     @Transactional
     public CheckinResponse realizarCheckin(Long aulaId, Long alunoId, TipoCheckin tipo, UUID clientId) {
@@ -113,6 +114,9 @@ public class CheckinService {
         checkin.setStatus(status);
         checkinRepository.save(checkin);
 
+        // Novo treino muda o streak — invalida o cache do aluno (docs/02 seção 7)
+        streakCache.invalidate(alunoId);
+
         return CheckinResponse.from(checkin);
     }
 
@@ -130,6 +134,7 @@ public class CheckinService {
                 .ifPresent(listaEsperaRepository::delete);
 
         checkinRepository.delete(checkin);
+        streakCache.invalidate(checkin.getAluno().getId());
 
         // Rule 5: Promote next from waiting list
         if (wasConfirmed) {
@@ -144,6 +149,7 @@ public class CheckinService {
 
         checkin.setStatus(StatusCheckin.EXCECAO_LIBERADA);
         checkinRepository.save(checkin);
+        streakCache.invalidate(checkin.getAluno().getId());
         return CheckinResponse.from(checkin);
     }
 
@@ -186,6 +192,7 @@ public class CheckinService {
             checkinRepository.findByAulaIdAndAlunoId(aulaId, espera.getAluno().getId()).ifPresent(checkin -> {
                 checkin.setStatus(StatusCheckin.CONFIRMADO);
                 checkinRepository.save(checkin);
+                streakCache.invalidate(checkin.getAluno().getId());
             });
             listaEsperaRepository.delete(espera);
         });

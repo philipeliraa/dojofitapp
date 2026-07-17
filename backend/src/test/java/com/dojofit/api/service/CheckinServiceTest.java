@@ -49,6 +49,8 @@ class CheckinServiceTest {
     private UsuarioRepository usuarioRepository;
     @Mock
     private AulaService aulaService;
+    @Mock
+    private AlunoStreakCache streakCache;
 
     @InjectMocks
     private CheckinService checkinService;

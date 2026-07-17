@@ -5,6 +5,8 @@ import { Aula } from '../../../core/models/aula.model';
 import { OfflineCheckinService } from '../../../offline/offline-checkin.service';
 import { PendingCheckinQueueService } from '../../../offline/pending-checkin-queue.service';
 import { CheckinSyncService } from '../../../offline/checkin-sync.service';
+import { StreakApiService } from '../../../core/services/streak-api.service';
+import { Streak } from '../../../core/models/streak.model';
 
 @Component({
   selector: 'app-student-home',
@@ -14,9 +16,19 @@ import { CheckinSyncService } from '../../../offline/checkin-sync.service';
       <h2 class="text-xl font-semibold text-brand-navy mb-2">Aulas de Hoje</h2>
       <p class="text-sm text-gray-500 mb-4">{{ todayFormatted }}</p>
 
-      @if (weekInfo()) {
-        <div class="bg-brand-navy-light/20 border border-brand-navy-light rounded-lg p-3 mb-4 text-sm">
-          Check-ins esta semana: <strong>{{ weekInfo()!.count }}</strong>{{ weekInfo()!.limite ? ' / ' + weekInfo()!.limite : '' }}
+      @if (streak(); as s) {
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-2xl font-semibold text-brand-navy">
+              {{ s.weeklyStreak }} {{ s.weeklyStreak === 1 ? 'semana' : 'semanas' }}
+            </span>
+            @if (weekInfo(); as w) {
+              <span class="text-xs text-gray-400">
+                {{ w.count }}{{ w.limite ? ' / ' + w.limite : '' }} esta semana
+              </span>
+            }
+          </div>
+          <p class="text-sm text-gray-500">{{ s.contextualMessage }}</p>
         </div>
       }
 
@@ -86,6 +98,7 @@ export class StudentHomeComponent implements OnInit {
   message = signal('');
   messageType = signal<'success' | 'error'>('success');
   weekInfo = signal<{ count: number; limite?: number } | null>(null);
+  streak = signal<Streak | null>(null);
   todayFormatted = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   today = new Date().toISOString().split('T')[0];
 
@@ -94,6 +107,7 @@ export class StudentHomeComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private offlineCheckin: OfflineCheckinService,
+    private streakApi: StreakApiService,
     queue: PendingCheckinQueueService,
     checkinSync: CheckinSyncService,
   ) {
@@ -120,6 +134,7 @@ export class StudentHomeComponent implements OnInit {
     });
     this.loadCheckins();
     this.http.get<{ count: number }>(`${environment.apiUrl}/checkins/semana`).subscribe(data => this.weekInfo.set(data));
+    this.streakApi.getStreak().subscribe(data => this.streak.set(data));
   }
 
   doCheckin(aulaId: number) {
@@ -180,6 +195,7 @@ export class StudentHomeComponent implements OnInit {
   private refreshAulas() {
     this.http.get<Aula[]>(`${environment.apiUrl}/aulas?data=${this.today}`).subscribe(data => this.aulas.set(data));
     this.http.get<{ count: number }>(`${environment.apiUrl}/checkins/semana`).subscribe(data => this.weekInfo.set(data));
+    this.streakApi.getStreak().subscribe(data => this.streak.set(data));
   }
 
   private showMessage(text: string, type: 'success' | 'error') {

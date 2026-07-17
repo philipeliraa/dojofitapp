@@ -3,8 +3,10 @@ package com.dojofit.api.controller;
 import com.dojofit.api.dto.request.CheckinRequest;
 import com.dojofit.api.dto.request.ManualCheckinRequest;
 import com.dojofit.api.dto.response.CheckinResponse;
+import com.dojofit.api.dto.response.StreakResponse;
 import com.dojofit.api.model.enums.TipoCheckin;
 import com.dojofit.api.service.CheckinService;
+import com.dojofit.api.service.StreakService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,7 @@ import java.util.Map;
 public class CheckinController {
 
     private final CheckinService checkinService;
+    private final StreakService streakService;
 
     @PostMapping
     public ResponseEntity<CheckinResponse> checkin(@Valid @RequestBody CheckinRequest request, Authentication auth) {
@@ -63,5 +66,11 @@ public class CheckinController {
     public Map<String, Object> checkinsSemana(Authentication auth) {
         Long userId = (Long) auth.getPrincipal();
         return checkinService.getResumoSemanal(userId);
+    }
+
+    @GetMapping("/streak")
+    public StreakResponse streak(Authentication auth) {
+        Long userId = (Long) auth.getPrincipal();
+        return streakService.getStreak(userId);
     }
 }
