@@ -32,8 +32,13 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, { email, senha }, { withCredentials: true });
   }
 
-  register(nome: string, email: string, senha: string) {
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, { nome, email, senha }, { withCredentials: true });
+  /** Cadastro só via convite: e-mail e papel vêm do convite no backend (docs/06 fluxo 2). */
+  register(nome: string, senha: string, conviteToken: string) {
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, { nome, senha, conviteToken }, { withCredentials: true });
+  }
+
+  getConvitePreview(token: string) {
+    return this.http.get<{ email: string; role: Role }>(`${environment.apiUrl}/auth/convites/${token}`);
   }
 
   loginWithGoogle(idToken: string) {

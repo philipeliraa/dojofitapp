@@ -1,12 +1,11 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule],
   template: `
     <div class="min-h-screen bg-brand-bg flex items-center justify-center px-4">
       <div class="w-full max-w-sm">
@@ -61,8 +60,7 @@ import { AuthService } from '../../core/services/auth.service';
 
           <div class="mt-4 text-center">
             <p class="text-sm text-gray-500">
-              Nao tem conta?
-              <a routerLink="/register" class="text-brand-blue hover:underline">Cadastre-se</a>
+              O acesso ao Dojofit e por convite da academia.
             </p>
           </div>
         </div>

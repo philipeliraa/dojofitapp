@@ -61,6 +61,21 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toBeFalse();
   });
 
+  it('cadastro envia só nome, senha e token do convite — email e papel vêm do convite (docs/06)', () => {
+    service.register('Novo Aluno', 'senha-123', 'token-do-convite').subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/auth/register`);
+    expect(req.request.body).toEqual({ nome: 'Novo Aluno', senha: 'senha-123', conviteToken: 'token-do-convite' });
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(authResponse);
+  });
+
+  it('preview do convite consulta o endpoint público com o token', () => {
+    service.getConvitePreview('token-abc').subscribe();
+
+    httpMock.expectOne(`${environment.apiUrl}/auth/convites/token-abc`).flush({ email: 'a@dojofit.com', role: 'ALUNO' });
+  });
+
   it('logout chama o backend (limpa o cookie) e zera a sessão em memória', () => {
     service.handleAuth(authResponse);
 
