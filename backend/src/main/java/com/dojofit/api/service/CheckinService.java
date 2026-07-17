@@ -22,6 +22,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +36,14 @@ public class CheckinService {
     private final AulaService aulaService;
 
     @Transactional
-    public CheckinResponse realizarCheckin(Long aulaId, Long alunoId, TipoCheckin tipo) {
+    public CheckinResponse realizarCheckin(Long aulaId, Long alunoId, TipoCheckin tipo, UUID clientId) {
+        // Idempotência (docs/07 seção 6): mesmo clientId => retorna o check-in já processado,
+        // sem reexecutar regra de negócio (protege reenvio da fila offline)
+        var existente = checkinRepository.findByClientId(clientId);
+        if (existente.isPresent()) {
+            return CheckinResponse.from(existente.get());
+        }
+
         var aula = aulaService.getAula(aulaId);
         var aluno = usuarioRepository.findById(alunoId)
                 .orElseThrow(() -> new EntityNotFoundException("Aluno nao encontrado"));
@@ -45,8 +53,11 @@ public class CheckinService {
             throw new BusinessException("Esta aula foi cancelada");
         }
 
-        // Contrato ativo e valido
+        // Check-in permitido apenas no dia da propria aula (docs/01)
         LocalDate today = LocalDate.now();
+        if (!aula.getData().equals(today)) {
+            throw new BusinessException("Check-in permitido apenas no dia da aula");
+        }
         Contrato contrato = contratoRepository.findByAlunoIdAndStatus(alunoId, StatusContrato.ATIVO)
                 .orElseThrow(() -> new BusinessException("Voce nao possui contrato ativo. Procure o administrador"));
 
@@ -95,6 +106,7 @@ public class CheckinService {
         }
 
         var checkin = new Checkin();
+        checkin.setClientId(clientId);
         checkin.setAula(aula);
         checkin.setAluno(aluno);
         checkin.setTipo(tipo);

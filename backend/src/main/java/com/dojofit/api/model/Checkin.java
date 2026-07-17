@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "checkin", uniqueConstraints = {
@@ -21,6 +22,10 @@ public class Checkin {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // UUID gerado no cliente — base da deduplicação/idempotência (docs/07 seção 6)
+    @Column(name = "client_id", nullable = false, unique = true, updatable = false)
+    private UUID clientId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "aula_id", nullable = false)

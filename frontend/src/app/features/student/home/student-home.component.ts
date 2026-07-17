@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Aula } from '../../../core/models/aula.model';
+import { CheckinApiService } from '../../../core/services/checkin-api.service';
 
 @Component({
   selector: 'app-student-home',
@@ -82,7 +83,7 @@ export class StudentHomeComponent implements OnInit {
   todayFormatted = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   today = new Date().toISOString().split('T')[0];
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private checkinApi: CheckinApiService) {}
 
   ngOnInit() {
     this.http.get<Aula[]>(`${environment.apiUrl}/aulas?data=${this.today}`).subscribe({
@@ -95,7 +96,7 @@ export class StudentHomeComponent implements OnInit {
 
   doCheckin(aulaId: number) {
     this.checkingIn.set(true);
-    this.http.post<any>(`${environment.apiUrl}/checkins`, { aulaId }).subscribe({
+    this.checkinApi.checkin(aulaId).subscribe({
       next: (res) => {
         this.checkingIn.set(false);
         const updated = new Map(this.checkinMap());

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../environments/environment';
 import { Aula } from '../../../core/models/aula.model';
+import { CheckinApiService } from '../../../core/services/checkin-api.service';
 import { Checkin } from '../../../core/models/checkin.model';
 
 @Component({
@@ -89,7 +90,7 @@ export class AttendanceComponent implements OnInit {
   message = signal('');
   messageType = signal<'success' | 'error'>('success');
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private checkinApi: CheckinApiService) {}
 
   ngOnInit() {
     const today = new Date().toISOString().split('T')[0];
@@ -107,10 +108,7 @@ export class AttendanceComponent implements OnInit {
 
   manualCheckin() {
     if (!this.manualAlunoId || !this.selectedAula()) return;
-    this.http.post<any>(`${environment.apiUrl}/checkins/manual`, {
-      aulaId: this.selectedAula()!.id,
-      alunoId: Number(this.manualAlunoId),
-    }).subscribe({
+    this.checkinApi.manualCheckin(this.selectedAula()!.id, Number(this.manualAlunoId)).subscribe({
       next: () => {
         this.showMessage('Check-in manual realizado', 'success');
         this.loadCheckins(this.selectedAula()!.id);

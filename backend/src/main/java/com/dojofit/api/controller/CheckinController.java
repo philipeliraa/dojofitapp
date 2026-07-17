@@ -1,15 +1,17 @@
 package com.dojofit.api.controller;
 
+import com.dojofit.api.dto.request.CheckinRequest;
+import com.dojofit.api.dto.request.ManualCheckinRequest;
 import com.dojofit.api.dto.response.CheckinResponse;
 import com.dojofit.api.model.enums.TipoCheckin;
 import com.dojofit.api.service.CheckinService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,18 +23,15 @@ public class CheckinController {
     private final CheckinService checkinService;
 
     @PostMapping
-    public ResponseEntity<CheckinResponse> checkin(@RequestBody Map<String, Long> body, Authentication auth) {
+    public ResponseEntity<CheckinResponse> checkin(@Valid @RequestBody CheckinRequest request, Authentication auth) {
         Long userId = (Long) auth.getPrincipal();
-        Long aulaId = body.get("aulaId");
-        return ResponseEntity.ok(checkinService.realizarCheckin(aulaId, userId, TipoCheckin.PROPRIO));
+        return ResponseEntity.ok(checkinService.realizarCheckin(request.aulaId(), userId, TipoCheckin.PROPRIO, request.clientId()));
     }
 
     @PostMapping("/manual")
     @PreAuthorize("hasAnyAuthority('PROFESSOR', 'ADMIN')")
-    public ResponseEntity<CheckinResponse> checkinManual(@RequestBody Map<String, Long> body) {
-        Long aulaId = body.get("aulaId");
-        Long alunoId = body.get("alunoId");
-        return ResponseEntity.ok(checkinService.realizarCheckin(aulaId, alunoId, TipoCheckin.PROFESSOR));
+    public ResponseEntity<CheckinResponse> checkinManual(@Valid @RequestBody ManualCheckinRequest request) {
+        return ResponseEntity.ok(checkinService.realizarCheckin(request.aulaId(), request.alunoId(), TipoCheckin.PROFESSOR, request.clientId()));
     }
 
     @PostMapping("/{id}/excecao")

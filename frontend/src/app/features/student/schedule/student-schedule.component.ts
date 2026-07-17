@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Aula } from '../../../core/models/aula.model';
+import { CheckinApiService } from '../../../core/services/checkin-api.service';
 
 @Component({
   selector: 'app-student-schedule',
@@ -78,7 +79,7 @@ export class StudentScheduleComponent implements OnInit {
   weekLabel = '';
   today = this.formatDate(new Date());
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private checkinApi: CheckinApiService) {}
 
   ngOnInit() {
     this.updateWeek();
@@ -111,7 +112,7 @@ export class StudentScheduleComponent implements OnInit {
 
   checkin(aula: Aula) {
     this.message.set('');
-    this.http.post<any>(`${environment.apiUrl}/checkins`, { aulaId: aula.id }).subscribe({
+    this.checkinApi.checkin(aula.id).subscribe({
       next: (res) => {
         const status = res.status === 'LISTA_ESPERA' ? 'Voce entrou na lista de espera' : 'Check-in realizado com sucesso!';
         this.message.set(status);
