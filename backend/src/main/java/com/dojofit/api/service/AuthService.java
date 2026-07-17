@@ -4,8 +4,8 @@ import com.dojofit.api.config.JwtUtil;
 import com.dojofit.api.dto.request.GoogleAuthRequest;
 import com.dojofit.api.dto.request.LoginRequest;
 import com.dojofit.api.dto.request.RegisterRequest;
-import com.dojofit.api.dto.response.AuthResponse;
 import com.dojofit.api.dto.response.UserResponse;
+import com.dojofit.api.exception.AuthException;
 import com.dojofit.api.exception.BusinessException;
 import com.dojofit.api.model.Usuario;
 import com.dojofit.api.model.enums.Role;
@@ -34,7 +34,7 @@ public class AuthService {
     @Value("${google.client-id}")
     private String googleClientId;
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthSession register(RegisterRequest request) {
         if (usuarioRepository.findByEmail(request.email()).isPresent()) {
             throw new BusinessException("Email ja cadastrado");
         }
@@ -46,11 +46,10 @@ public class AuthService {
         usuario.setRole(Role.ALUNO);
         usuarioRepository.save(usuario);
 
-        String token = jwtUtil.generateToken(usuario);
-        return new AuthResponse(token, UserResponse.from(usuario));
+        return sessionFor(usuario);
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthSession login(LoginRequest request) {
         var usuario = usuarioRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException("Email ou senha invalidos"));
 
@@ -62,11 +61,10 @@ public class AuthService {
             throw new BusinessException("Usuario inativo");
         }
 
-        String token = jwtUtil.generateToken(usuario);
-        return new AuthResponse(token, UserResponse.from(usuario));
+        return sessionFor(usuario);
     }
 
-    public AuthResponse loginWithGoogle(GoogleAuthRequest request) {
+    public AuthSession loginWithGoogle(GoogleAuthRequest request) {
         try {
             // Verify Google ID token via Google's tokeninfo endpoint
             var httpClient = HttpClient.newHttpClient();
@@ -109,13 +107,37 @@ public class AuthService {
                 throw new BusinessException("Usuario inativo");
             }
 
-            String token = jwtUtil.generateToken(usuario);
-            return new AuthResponse(token, UserResponse.from(usuario));
+            return sessionFor(usuario);
 
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             throw new BusinessException("Erro ao autenticar com Google");
         }
+    }
+
+    /**
+     * Renova a sessão a partir do refresh token do cookie httpOnly (docs/07 seção 7).
+     * Também rotaciona o refresh token — cada uso emite um novo cookie.
+     */
+    public AuthSession refresh(String refreshToken) {
+        if (refreshToken == null || !jwtUtil.validateToken(refreshToken)
+                || !JwtUtil.TYPE_REFRESH.equals(jwtUtil.extractTokenType(refreshToken))) {
+            throw new AuthException("Sessao expirada. Faca login novamente");
+        }
+
+        Long userId = jwtUtil.extractUserId(refreshToken);
+        var usuario = usuarioRepository.findById(userId)
+                .filter(Usuario::getAtivo)
+                .orElseThrow(() -> new AuthException("Sessao expirada. Faca login novamente"));
+
+        return sessionFor(usuario);
+    }
+
+    private AuthSession sessionFor(Usuario usuario) {
+        return new AuthSession(
+                jwtUtil.generateToken(usuario),
+                jwtUtil.generateRefreshToken(usuario),
+                UserResponse.from(usuario));
     }
 }

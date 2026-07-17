@@ -1,13 +1,17 @@
 package com.dojofit.api.controller;
 
+import com.dojofit.api.config.RefreshCookieFactory;
 import com.dojofit.api.dto.request.GoogleAuthRequest;
 import com.dojofit.api.dto.request.LoginRequest;
 import com.dojofit.api.dto.request.RegisterRequest;
 import com.dojofit.api.dto.response.AuthResponse;
 import com.dojofit.api.service.AuthService;
+import com.dojofit.api.service.AuthSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,19 +23,41 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final RefreshCookieFactory refreshCookieFactory;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+        return respondWith(authService.register(request));
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+        return respondWith(authService.login(request));
     }
 
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> loginWithGoogle(@Valid @RequestBody GoogleAuthRequest request) {
-        return ResponseEntity.ok(authService.loginWithGoogle(request));
+        return respondWith(authService.loginWithGoogle(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(
+            @CookieValue(name = RefreshCookieFactory.COOKIE_NAME, required = false) String refreshToken) {
+        return respondWith(authService.refresh(refreshToken));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, refreshCookieFactory.clear().toString())
+                .build();
+    }
+
+    // Access token vai no corpo (memória do frontend); refresh token vai em
+    // cookie httpOnly — nunca acessível a JavaScript (docs/07 seção 7)
+    private ResponseEntity<AuthResponse> respondWith(AuthSession session) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookieFactory.create(session.refreshToken()).toString())
+                .body(new AuthResponse(session.accessToken(), session.user()));
     }
 }

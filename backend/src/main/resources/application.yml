@@ -19,7 +19,15 @@ server:
 
 jwt:
   secret: ${JWT_SECRET:dev-secret-key-change-me-in-production-min-256-bits-long!!}
-  expiration-ms: 86400000
+  # Access token curto (vive só na memória do frontend); a sessão longa é o refresh token (cookie httpOnly)
+  expiration-ms: 900000
+  refresh-expiration-ms: 604800000
+
+auth:
+  cookie:
+    # Em produção (HTTPS + frontend/backend em domínios distintos): secure=true e same-site=None
+    secure: ${AUTH_COOKIE_SECURE:false}
+    same-site: ${AUTH_COOKIE_SAMESITE:Lax}
 
 google:
   client-id: ${GOOGLE_CLIENT_ID:}

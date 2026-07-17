@@ -28,7 +28,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
-            if (jwtUtil.validateToken(token)) {
+            // Só access tokens autenticam requisições — refresh token vale apenas no /api/auth/refresh
+            if (jwtUtil.validateToken(token) && JwtUtil.TYPE_ACCESS.equals(jwtUtil.extractTokenType(token))) {
                 Long userId = jwtUtil.extractUserId(token);
                 String role = jwtUtil.extractRole(token);
 
