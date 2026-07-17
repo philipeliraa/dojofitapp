@@ -28,7 +28,7 @@ describe('PendingCheckinQueueService', () => {
     expect(stored.length).toBe(1);
     expect(stored[0].id).toBe(pendente.id);
     expect(service.items().length).toBe(1);
-    expect(service.pendingAulaIds().has(42)).toBeTrue();
+    expect(service.pendingAulaIds().has(42)).toBe(true);
   });
 
   it('remove item sincronizado da fila', async () => {
@@ -38,7 +38,7 @@ describe('PendingCheckinQueueService', () => {
     await service.remove(pendente.id);
 
     expect((await service.getAll()).length).toBe(0);
-    expect(service.pendingAulaIds().has(42)).toBeFalse();
+    expect(service.pendingAulaIds().has(42)).toBe(false);
   });
 
   it('marca falha de regra de negócio como failed, fora do conjunto de pendentes', async () => {
@@ -51,15 +51,15 @@ describe('PendingCheckinQueueService', () => {
     expect(stored[0].status).toBe('failed');
     expect(stored[0].errorMessage).toBe('Limite semanal atingido');
     // failed não conta como pendente: estado otimista é revertido na UI
-    expect(service.pendingAulaIds().has(42)).toBeFalse();
+    expect(service.pendingAulaIds().has(42)).toBe(false);
   });
 
   it('hasForAula ignora itens failed (permite novo check-in após falha)', async () => {
     const pendente = item();
     await service.enqueue(pendente);
-    expect(service.hasForAula(42)).toBeTrue();
+    expect(service.hasForAula(42)).toBe(true);
 
     await service.setStatus(pendente.id, 'failed');
-    expect(service.hasForAula(42)).toBeFalse();
+    expect(service.hasForAula(42)).toBe(false);
   });
 });

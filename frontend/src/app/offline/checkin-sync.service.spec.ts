@@ -47,7 +47,7 @@ describe('CheckinSyncService', () => {
     await done;
 
     expect((await queue.getAll()).length).toBe(0);
-    expect(service.lastResult()?.ok).toBeTrue();
+    expect(service.lastResult()?.ok).toBe(true);
   });
 
   it('falha de regra de negócio na sincronização marca failed e notifica — sem retry', async () => {

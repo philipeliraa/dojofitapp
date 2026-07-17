@@ -24,20 +24,22 @@ describe('AuthService', () => {
   afterEach(() => httpMock.verify());
 
   it('guarda o access token somente em memória — nunca em localStorage (docs/07)', () => {
-    spyOn(localStorage, 'setItem');
+    const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
 
     service.handleAuth(authResponse);
 
     expect(service.getToken()).toBe('access-token-1');
     expect(service.user()?.email).toBe('a@dojofit.com');
-    expect(localStorage.setItem).not.toHaveBeenCalled();
+    expect(setItemSpy).not.toHaveBeenCalled();
+
+    setItemSpy.mockRestore();
   });
 
   it('login envia withCredentials para receber o cookie httpOnly', () => {
     service.login('a@dojofit.com', 'senha').subscribe();
 
     const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
-    expect(req.request.withCredentials).toBeTrue();
+    expect(req.request.withCredentials).toBe(true);
     req.flush(authResponse);
   });
 
@@ -47,7 +49,7 @@ describe('AuthService', () => {
 
     const reqs = httpMock.match(`${environment.apiUrl}/auth/refresh`);
     expect(reqs.length).toBe(1);
-    expect(reqs[0].request.withCredentials).toBeTrue();
+    expect(reqs[0].request.withCredentials).toBe(true);
     reqs[0].flush(authResponse);
     expect(service.getToken()).toBe('access-token-1');
   });
@@ -57,8 +59,8 @@ describe('AuthService', () => {
     httpMock.expectOne(`${environment.apiUrl}/auth/refresh`).flush(
       { error: 'Sessao expirada' }, { status: 401, statusText: 'Unauthorized' });
 
-    await expectAsync(promise).toBeResolved();
-    expect(service.isLoggedIn()).toBeFalse();
+    await promise;
+    expect(service.isLoggedIn()).toBe(false);
   });
 
   it('cadastro envia só nome, senha e token do convite — email e papel vêm do convite (docs/06)', () => {
@@ -66,7 +68,7 @@ describe('AuthService', () => {
 
     const req = httpMock.expectOne(`${environment.apiUrl}/auth/register`);
     expect(req.request.body).toEqual({ nome: 'Novo Aluno', senha: 'senha-123', conviteToken: 'token-do-convite' });
-    expect(req.request.withCredentials).toBeTrue();
+    expect(req.request.withCredentials).toBe(true);
     req.flush(authResponse);
   });
 
@@ -81,10 +83,10 @@ describe('AuthService', () => {
 
     service.logout();
     const req = httpMock.expectOne(`${environment.apiUrl}/auth/logout`);
-    expect(req.request.withCredentials).toBeTrue();
+    expect(req.request.withCredentials).toBe(true);
     req.flush(null, { status: 204, statusText: 'No Content' });
 
     expect(service.getToken()).toBeNull();
-    expect(service.isLoggedIn()).toBeFalse();
+    expect(service.isLoggedIn()).toBe(false);
   });
 });

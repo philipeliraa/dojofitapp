@@ -69,7 +69,7 @@ describe('authInterceptor', () => {
       .flush({ error: 'sessao expirada' }, { status: 401, statusText: 'Unauthorized' });
 
     expect(erro.status).toBe(401);
-    expect(authService.isLoggedIn()).toBeFalse();
+    expect(authService.isLoggedIn()).toBe(false);
   });
 
   it('não tenta refresh em erro 401 de endpoint de auth (ex: login inválido)', () => {

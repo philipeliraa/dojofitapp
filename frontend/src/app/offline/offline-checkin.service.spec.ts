@@ -69,7 +69,7 @@ describe('OfflineCheckinService', () => {
     httpMock.expectOne(`${environment.apiUrl}/checkins`)
       .flush({ error: 'Limite semanal atingido' }, { status: 422, statusText: 'Unprocessable Entity' });
 
-    await expectAsync(promise).toBeRejected();
+    await expect(promise).rejects.toBeDefined();
     expect((await queue.getAll()).length).toBe(0);
   });
 
