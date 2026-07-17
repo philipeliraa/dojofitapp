@@ -27,3 +27,10 @@ docker-compose.override.yml
 
 # Logs
 *.log
+
+# Documentação local — não subir ao GitHub (decisão do Philipe, 2026-07-17)
+docs/
+CLAUDE.md
+
+# Claude Code (config local da máquina)
+.claude/settings.local.json
