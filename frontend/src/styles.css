@@ -1,15 +1,97 @@
 @import "tailwindcss";
 
+/* Sora self-hosted (docs/07 seção 9) — arquivos em public/assets/fonts,
+   nunca carregados do CDN do Google, para não depender de rede externa
+   no carregamento inicial (relevante em wifi de academia instável).
+   Fonte variável: um único arquivo por bloco de unicode-range cobre
+   toda a faixa de peso 400-600 usada pelo produto (docs/03 seção 4). */
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/assets/fonts/sora-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/assets/fonts/sora-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 @theme {
+  /* Tipografia (docs/03 seção 4) */
+  --font-sans: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Escala tipográfica (docs/03 seção 4) — gera as utilities text-display,
+     text-title, text-heading, text-body, text-label, text-caption */
+  --text-display: 28px;
+  --text-display--font-weight: 600;
+  --text-title: 22px;
+  --text-title--font-weight: 500;
+  --text-heading: 15px;
+  --text-heading--font-weight: 500;
+  --text-body: 13px;
+  --text-body--font-weight: 400;
+  --text-label: 13px;
+  --text-label--font-weight: 500;
+  --text-caption: 11px;
+  --text-caption--font-weight: 400;
+
+  /* Paleta de marca — "Kimono branco" (docs/03 seção 2) */
   --color-brand-navy: #042C53;
-  --color-brand-navy-light: #B5D4F4;
   --color-brand-blue: #378ADD;
   --color-brand-alert: #E24B4A;
-  --color-brand-bg: #FAFAF8;
+  --color-brand-alert-soft: #FCEBEB;
+  --color-brand-alert-deep: #791F1F;
 
-  --color-belt-white: #FAFAF8;
-  --color-belt-blue: #378ADD;
-  --color-belt-purple: #7F77DD;
-  --color-belt-brown: #993C1D;
-  --color-belt-black: #1C1C1A;
+  /* Estado de sucesso/confirmação — token adicionado nesta sessão (docs/03 seções 2 e 7) */
+  --color-state-success: #2F7D5B;
+  --color-state-success-soft: #E8F5EE;
+  --color-state-success-deep: #1F5B41;
+
+  --color-surface-base: #FAFAF8;
+  --color-surface-body: #F1EFE8;
+
+  /* Nomeados sem repetir a categoria (não --color-text-primary/--color-border-default):
+     o Tailwind v4 deriva a utility do prefixo (text-/border-) + --color-{resto};
+     duplicar a categoria no nome quebra a geração da classe. */
+  --color-primary: #1C1C1A;
+  --color-secondary: #5F5E5A;
+
+  --color-default: #D3D1C7;
+  --color-strong: #B4B2A9;
+
+  --color-accent-blue-soft: #E6F1FB;
+  --color-accent-blue-deep: #0C447C;
+
+  /* Sistema de graduação — separado da paleta de marca (docs/03 seção 3).
+     Só dojofit-belt-badge pode consumir estes tokens (regra não-negociável). */
+  --color-belt-branca: #FAFAF8;
+  --color-belt-azul: #378ADD;
+  --color-belt-roxa: #7F77DD;
+  --color-belt-marrom: #993C1D;
+  --color-belt-preta: #1C1C1A;
+
+  /* Raio de borda (docs/03 seção 6) */
+  --radius-card: 12px;
+  --radius-app: 16px;
+  --radius-button: 8px;
+  --radius-badge: 20px;
+
+  /* Elevação (docs/03 seção 6) — elevation.none é ausência de sombra (só borda),
+     por isso só elevation.raised precisa de token */
+  --shadow-raised: 0 2px 8px rgba(4, 44, 83, 0.08);
+
+  /* --- Legado, pendente de remoção na etapa 5.4 (reestruturação da navegação) ---
+     brand-navy-light e brand-bg nunca foram documentados em docs/03; usados
+     hoje só nos 3 layouts (student/professor/admin) que serão substituídos
+     por um AppShellComponent único. Mantidos aqui, inalterados, só para não
+     quebrar essas telas antes de serem reescritas. */
+  --color-brand-navy-light: #B5D4F4;
+  --color-brand-bg: #FAFAF8;
 }
