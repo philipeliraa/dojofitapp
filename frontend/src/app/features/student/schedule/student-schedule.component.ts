@@ -2,7 +2,8 @@ import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Aula } from '../../../core/models/aula.model';
-import { CheckinApiService } from '../../../core/services/checkin-api.service';
+import { OfflineCheckinService } from '../../../offline/offline-checkin.service';
+import { PendingCheckinQueueService } from '../../../offline/pending-checkin-queue.service';
 
 @Component({
   selector: 'app-student-schedule',
@@ -45,7 +46,9 @@ import { CheckinApiService } from '../../../core/services/checkin-api.service';
                       <span class="text-xs" [class]="aula.vagasDisponiveis > 0 ? 'text-green-600' : 'text-orange-500'">
                         {{ aula.vagasDisponiveis }} vagas
                       </span>
-                      @if (isToday(day.date) && !checkinMap().has(aula.id)) {
+                      @if (pendingAulaIds().has(aula.id)) {
+                        <span class="text-blue-600 text-xs font-medium">⏱ Pendente</span>
+                      } @else if (isToday(day.date) && !checkinMap().has(aula.id)) {
                         <button (click)="checkin(aula)" class="bg-brand-blue text-white px-3 py-1 rounded text-xs hover:bg-brand-blue/90">
                           Check-in
                         </button>
@@ -79,7 +82,15 @@ export class StudentScheduleComponent implements OnInit {
   weekLabel = '';
   today = this.formatDate(new Date());
 
-  constructor(private http: HttpClient, private checkinApi: CheckinApiService) {}
+  readonly pendingAulaIds;
+
+  constructor(
+    private http: HttpClient,
+    private offlineCheckin: OfflineCheckinService,
+    queue: PendingCheckinQueueService,
+  ) {
+    this.pendingAulaIds = queue.pendingAulaIds;
+  }
 
   ngOnInit() {
     this.updateWeek();
@@ -112,16 +123,21 @@ export class StudentScheduleComponent implements OnInit {
 
   checkin(aula: Aula) {
     this.message.set('');
-    this.checkinApi.checkin(aula.id).subscribe({
-      next: (res) => {
-        const status = res.status === 'LISTA_ESPERA' ? 'Voce entrou na lista de espera' : 'Check-in realizado com sucesso!';
+    this.offlineCheckin.checkin(aula.id).subscribe({
+      next: (outcome) => {
+        if (outcome.kind === 'queued') {
+          this.message.set('Sem conexao — check-in salvo e sera sincronizado automaticamente.');
+          this.messageType.set('success');
+          return;
+        }
+        const status = outcome.response.status === 'LISTA_ESPERA' ? 'Voce entrou na lista de espera' : 'Check-in realizado com sucesso!';
         this.message.set(status);
         this.messageType.set('success');
-        this.checkinMap.update(map => new Map(map).set(aula.id, res.id));
+        this.checkinMap.update(map => new Map(map).set(aula.id, outcome.response.id));
         this.updateWeek();
       },
       error: (err) => {
-        this.message.set(err.error?.message || 'Erro ao realizar check-in.');
+        this.message.set(err.error?.message || err.error?.error || 'Erro ao realizar check-in.');
         this.messageType.set('error');
       }
     });

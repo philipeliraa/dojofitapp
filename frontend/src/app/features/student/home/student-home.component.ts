@@ -1,8 +1,10 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, effect, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Aula } from '../../../core/models/aula.model';
-import { CheckinApiService } from '../../../core/services/checkin-api.service';
+import { OfflineCheckinService } from '../../../offline/offline-checkin.service';
+import { PendingCheckinQueueService } from '../../../offline/pending-checkin-queue.service';
+import { CheckinSyncService } from '../../../offline/checkin-sync.service';
 
 @Component({
   selector: 'app-student-home',
@@ -42,6 +44,10 @@ import { CheckinApiService } from '../../../core/services/checkin-api.service';
 
               @if (aula.cancelada) {
                 <span class="text-red-500 text-sm font-medium">Aula Cancelada</span>
+              } @else if (pendingAulaIds().has(aula.id)) {
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+                  <span class="text-blue-700 text-sm font-medium">⏱ Check-in pendente de sincronização</span>
+                </div>
               } @else if (checkinMap().has(aula.id)) {
                 <div class="bg-green-50 border border-green-200 rounded-lg p-2 flex items-center justify-between">
                   <span class="text-green-700 text-sm font-medium">Check-in realizado!</span>
@@ -83,7 +89,29 @@ export class StudentHomeComponent implements OnInit {
   todayFormatted = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   today = new Date().toISOString().split('T')[0];
 
-  constructor(private http: HttpClient, private checkinApi: CheckinApiService) {}
+  readonly pendingAulaIds;
+
+  constructor(
+    private http: HttpClient,
+    private offlineCheckin: OfflineCheckinService,
+    queue: PendingCheckinQueueService,
+    checkinSync: CheckinSyncService,
+  ) {
+    this.pendingAulaIds = queue.pendingAulaIds;
+
+    // Reconciliação pós-sincronização (docs/05 seção 5): sucesso atualiza a
+    // tela; falha de regra de negócio reverte o estado otimista e notifica
+    effect(() => {
+      const result = checkinSync.lastResult();
+      if (!result) return;
+      if (result.ok) {
+        this.loadCheckins();
+        this.refreshAulas();
+      } else {
+        this.showMessage(result.message ?? 'Check-in nao pode ser sincronizado', 'error');
+      }
+    });
+  }
 
   ngOnInit() {
     this.http.get<Aula[]>(`${environment.apiUrl}/aulas?data=${this.today}`).subscribe({
@@ -96,14 +124,20 @@ export class StudentHomeComponent implements OnInit {
 
   doCheckin(aulaId: number) {
     this.checkingIn.set(true);
-    this.checkinApi.checkin(aulaId).subscribe({
-      next: (res) => {
+    this.offlineCheckin.checkin(aulaId).subscribe({
+      next: (outcome) => {
         this.checkingIn.set(false);
+
+        if (outcome.kind === 'queued') {
+          this.showMessage('Sem conexao — check-in salvo e sera sincronizado automaticamente.', 'success');
+          return;
+        }
+
         const updated = new Map(this.checkinMap());
-        updated.set(aulaId, res.id);
+        updated.set(aulaId, outcome.response.id);
         this.checkinMap.set(updated);
 
-        if (res.status === 'LISTA_ESPERA') {
+        if (outcome.response.status === 'LISTA_ESPERA') {
           this.showMessage('Aula lotada. Voce entrou na lista de espera.', 'error');
         } else {
           this.showMessage('Check-in confirmado!', 'success');
