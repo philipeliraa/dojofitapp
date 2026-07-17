@@ -6,45 +6,34 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent) },
   { path: 'register', loadComponent: () => import('./features/auth/register.component').then(m => m.RegisterComponent) },
 
+  // Casca única (docs/02 seção 1): uma interface para todos os papéis,
+  // substitui os antigos /student, /professor, /admin separados.
   {
-    path: 'student',
-    loadComponent: () => import('./features/student/student-layout.component').then(m => m.StudentLayoutComponent),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['ALUNO'] },
+    path: '',
+    loadComponent: () => import('./features/shell/app-shell.component').then(m => m.AppShellComponent),
+    canActivate: [authGuard],
     children: [
-      { path: '', loadComponent: () => import('./features/student/home/student-home.component').then(m => m.StudentHomeComponent) },
-      { path: 'schedule', loadComponent: () => import('./features/student/schedule/student-schedule.component').then(m => m.StudentScheduleComponent) },
-      { path: 'history', loadComponent: () => import('./features/student/history/checkin-history.component').then(m => m.CheckinHistoryComponent) },
-      { path: 'contract', loadComponent: () => import('./features/student/contract/my-contract.component').then(m => m.MyContractComponent) },
+      { path: '', loadComponent: () => import('./features/shell/inicio.component').then(m => m.InicioComponent) },
+      { path: 'calendario', loadComponent: () => import('./features/shell/calendario.component').then(m => m.CalendarioComponent) },
+      { path: 'perfil', loadComponent: () => import('./features/perfil/perfil.component').then(m => m.PerfilComponent) },
+      {
+        path: 'gestao',
+        loadComponent: () => import('./features/shell/gestao-layout.component').then(m => m.GestaoLayoutComponent),
+        canActivate: [roleGuard],
+        // Professor tem acesso parcial (docs/02 seção 2: Turmas, Alunos em
+        // leitura) — ainda não implementado; hoje só o Admin tem rotas aqui.
+        data: { roles: ['ADMIN'] },
+        children: [
+          { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
+          { path: 'usuarios', loadComponent: () => import('./features/admin/usuarios/usuario-list.component').then(m => m.UsuarioListComponent) },
+          { path: 'turmas', loadComponent: () => import('./features/admin/turmas/turma-list.component').then(m => m.TurmaListComponent) },
+          { path: 'aulas', loadComponent: () => import('./features/admin/aulas/aula-management.component').then(m => m.AulaManagementComponent) },
+          { path: 'planos', loadComponent: () => import('./features/admin/planos/plano-list.component').then(m => m.PlanoListComponent) },
+          { path: 'contratos', loadComponent: () => import('./features/admin/contratos/contrato-list.component').then(m => m.ContratoListComponent) },
+        ],
+      },
     ],
   },
 
-  {
-    path: 'professor',
-    loadComponent: () => import('./features/professor/professor-layout.component').then(m => m.ProfessorLayoutComponent),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['PROFESSOR', 'ADMIN'] },
-    children: [
-      { path: '', loadComponent: () => import('./features/professor/attendance/attendance.component').then(m => m.AttendanceComponent) },
-      { path: 'schedule', loadComponent: () => import('./features/professor/schedule/professor-schedule.component').then(m => m.ProfessorScheduleComponent) },
-    ],
-  },
-
-  {
-    path: 'admin',
-    loadComponent: () => import('./features/admin/admin-layout.component').then(m => m.AdminLayoutComponent),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN'] },
-    children: [
-      { path: '', loadComponent: () => import('./features/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent) },
-      { path: 'planos', loadComponent: () => import('./features/admin/planos/plano-list.component').then(m => m.PlanoListComponent) },
-      { path: 'turmas', loadComponent: () => import('./features/admin/turmas/turma-list.component').then(m => m.TurmaListComponent) },
-      { path: 'usuarios', loadComponent: () => import('./features/admin/usuarios/usuario-list.component').then(m => m.UsuarioListComponent) },
-      { path: 'contratos', loadComponent: () => import('./features/admin/contratos/contrato-list.component').then(m => m.ContratoListComponent) },
-      { path: 'aulas', loadComponent: () => import('./features/admin/aulas/aula-management.component').then(m => m.AulaManagementComponent) },
-    ],
-  },
-
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: '**', redirectTo: '/login' },
+  { path: '**', redirectTo: '' },
 ];

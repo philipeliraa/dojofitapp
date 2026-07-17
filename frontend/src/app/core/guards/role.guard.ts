@@ -11,6 +11,8 @@ export const roleGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  router.navigate(['/login']);
+  // Usuário autenticado mas sem permissão para esta rota — volta ao Início
+  // (a casca é a mesma para todos os papéis, então não faz sentido deslogar)
+  router.navigate(['/']);
   return false;
 };

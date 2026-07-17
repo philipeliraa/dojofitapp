@@ -92,19 +92,8 @@ export class AuthService {
   handleAuth(response: AuthResponse) {
     this.accessToken.set(response.token);
     this.currentUser.set(response.user);
-    this.redirectByRole(response.user.role);
-  }
-
-  private redirectByRole(role: Role) {
-    switch (role) {
-      case 'ADMIN':
-        this.router.navigate(['/admin']);
-        break;
-      case 'PROFESSOR':
-        this.router.navigate(['/professor']);
-        break;
-      default:
-        this.router.navigate(['/student']);
-    }
+    // Casca única (docs/02): todo papel entra pela mesma rota — o Início
+    // adapta o conteúdo, não existe mais um destino por papel.
+    this.router.navigate(['/']);
   }
 }
