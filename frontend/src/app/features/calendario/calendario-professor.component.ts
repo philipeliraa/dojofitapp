@@ -4,10 +4,10 @@ import { Aula } from '../../core/models/aula.model';
 import { AulaApiService } from '../../core/services/aula-api.service';
 import { CheckInService } from '../checkin/checkin.service';
 import { formatDateLocal } from '../../core/utils/data.util';
-import { DojofitCardComponent } from '../../shared/components/base/dojofit-card.component';
 import { DojofitButtonComponent } from '../../shared/components/base/dojofit-button.component';
 import { DojofitBadgeComponent } from '../../shared/components/base/dojofit-badge.component';
 import { DojofitInputComponent } from '../../shared/components/base/dojofit-input.component';
+import { DojofitClassCardComponent } from '../../shared/components/composed/dojofit-class-card.component';
 
 /**
  * Calendário do Professor/Admin (docs/02): grade semanal com override
@@ -19,7 +19,7 @@ import { DojofitInputComponent } from '../../shared/components/base/dojofit-inpu
 @Component({
   selector: 'app-calendario-professor',
   standalone: true,
-  imports: [FormsModule, DojofitCardComponent, DojofitButtonComponent, DojofitBadgeComponent, DojofitInputComponent],
+  imports: [FormsModule, DojofitButtonComponent, DojofitBadgeComponent, DojofitInputComponent, DojofitClassCardComponent],
   template: `
     <div>
       <h2 class="mb-4 text-title text-primary">Grade de Horários</h2>
@@ -38,48 +38,48 @@ import { DojofitInputComponent } from '../../shared/components/base/dojofit-inpu
           } @else {
             <div class="space-y-2">
               @for (aula of getAulasForDate(day.date); track aula.id) {
-                <dojofit-card padding="sm" [class.opacity-50]="aula.cancelada">
-                  <button
-                    class="flex w-full items-center justify-between text-left"
-                    [disabled]="!isToday(day.date)"
-                    (click)="toggleAula(aula)"
-                  >
-                    <div>
-                      <p class="text-body font-medium text-primary">{{ aula.turmaNome ?? 'Avulsa' }}</p>
-                      <p class="text-caption text-secondary">{{ aula.horaInicio }} - {{ aula.horaFim }}</p>
-                    </div>
-                    <span class="text-caption text-secondary">{{ aula.checkinsConfirmados }}/{{ aula.capacidadeMaxima }}</span>
-                  </button>
+                <dojofit-class-card
+                  padding="sm"
+                  [className]="aula.turmaNome ?? 'Avulsa'"
+                  [time]="aula.horaInicio + ' - ' + aula.horaFim"
+                  [capacity]="{ current: aula.checkinsConfirmados, max: aula.capacidadeMaxima }"
+                  [cancelled]="aula.cancelada"
+                >
+                  @if (isToday(day.date)) {
+                    <button class="text-caption text-brand-blue hover:underline" (click)="toggleAula(aula)">
+                      {{ aulaAberta()?.id === aula.id ? 'Fechar' : 'Fazer chamada' }}
+                    </button>
 
-                  @if (aulaAberta()?.id === aula.id) {
-                    <div class="mt-3 border-t border-default pt-3">
-                      <div class="mb-3 flex items-end gap-2">
-                        <dojofit-input label="ID do aluno" type="number" [(value)]="manualAlunoId" />
-                        <dojofit-button size="sm" (onClick)="manualCheckin()">Check-in Manual</dojofit-button>
-                      </div>
+                    @if (aulaAberta()?.id === aula.id) {
+                      <div class="mt-3 border-t border-default pt-3">
+                        <div class="mb-3 flex items-end gap-2">
+                          <dojofit-input label="ID do aluno" type="number" [(value)]="manualAlunoId" />
+                          <dojofit-button size="sm" (onClick)="manualCheckin()">Check-in Manual</dojofit-button>
+                        </div>
 
-                      <div class="space-y-2">
-                        @for (checkin of checkinService.checkinsDaAula(); track checkin.id) {
-                          <div class="flex items-center justify-between border-b border-default py-2 last:border-0">
-                            <div>
-                              <p class="text-body font-medium text-primary">{{ checkin.alunoNome }}</p>
-                              <p class="text-caption text-secondary">{{ checkin.tipo === 'PROFESSOR' ? 'Manual' : 'Proprio' }}</p>
+                        <div class="space-y-2">
+                          @for (checkin of checkinService.checkinsDaAula(); track checkin.id) {
+                            <div class="flex items-center justify-between border-b border-default py-2 last:border-0">
+                              <div>
+                                <p class="text-body font-medium text-primary">{{ checkin.alunoNome }}</p>
+                                <p class="text-caption text-secondary">{{ checkin.tipo === 'PROFESSOR' ? 'Manual' : 'Proprio' }}</p>
+                              </div>
+                              <div class="flex items-center gap-2">
+                                <dojofit-badge [tone]="statusTone(checkin.status)">{{ statusLabel(checkin.status) }}</dojofit-badge>
+                                @if (checkin.status === 'LISTA_ESPERA') {
+                                  <button (click)="liberarExcecao(checkin.id, aula.id)" class="text-caption text-brand-blue hover:underline">Liberar</button>
+                                }
+                              </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                              <dojofit-badge [tone]="statusTone(checkin.status)">{{ statusLabel(checkin.status) }}</dojofit-badge>
-                              @if (checkin.status === 'LISTA_ESPERA') {
-                                <button (click)="liberarExcecao(checkin.id, aula.id)" class="text-caption text-brand-blue hover:underline">Liberar</button>
-                              }
-                            </div>
-                          </div>
-                        }
-                        @if (checkinService.checkinsDaAula().length === 0) {
-                          <p class="py-2 text-center text-body text-secondary">Nenhum check-in</p>
-                        }
+                          }
+                          @if (checkinService.checkinsDaAula().length === 0) {
+                            <p class="py-2 text-center text-body text-secondary">Nenhum check-in</p>
+                          }
+                        </div>
                       </div>
-                    </div>
+                    }
                   }
-                </dojofit-card>
+                </dojofit-class-card>
               }
             </div>
           }

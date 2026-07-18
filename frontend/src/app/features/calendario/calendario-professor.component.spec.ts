@@ -49,7 +49,7 @@ describe('CalendarioProfessorComponent', () => {
   it('clicar na aula de hoje abre o painel de override manual e carrega o roster', async () => {
     const { fixture } = await setup();
 
-    fixture.nativeElement.querySelector('dojofit-card button').click();
+    fixture.nativeElement.querySelector('dojofit-class-card button').click();
     httpMock.expectOne(`${environment.apiUrl}/checkins/aula/1`).flush([]);
     fixture.detectChanges();
 
@@ -60,7 +60,7 @@ describe('CalendarioProfessorComponent', () => {
   it('check-in manual dentro do Calendário funciona (docs/02 — override manual do professor)', async () => {
     const { fixture } = await setup();
 
-    fixture.nativeElement.querySelector('dojofit-card button').click();
+    fixture.nativeElement.querySelector('dojofit-class-card button').click();
     httpMock.expectOne(`${environment.apiUrl}/checkins/aula/1`).flush([]);
     fixture.detectChanges();
 

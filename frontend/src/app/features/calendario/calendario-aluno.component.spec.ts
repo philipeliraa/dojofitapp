@@ -50,7 +50,7 @@ describe('CalendarioAlunoComponent', () => {
   it('mostra a aula de hoje com botão de check-in', async () => {
     const { fixture } = await setup();
     expect(fixture.nativeElement.textContent).toContain('Jiu-jitsu');
-    expect(fixture.nativeElement.querySelector('dojofit-button')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('dojofit-check-in-button')).toBeTruthy();
   });
 
   it('dias sem aula mostram "Sem aulas"', async () => {
@@ -61,7 +61,7 @@ describe('CalendarioAlunoComponent', () => {
   it('fazer check-in atualiza a semana e mostra mensagem de sucesso', async () => {
     const { fixture } = await setup();
 
-    fixture.nativeElement.querySelector('dojofit-button button').click();
+    fixture.nativeElement.querySelector('dojofit-check-in-button button').click();
     const req = httpMock.expectOne(`${environment.apiUrl}/checkins`);
     req.flush({ id: 9, clientId: req.request.body.clientId, aulaId: 1, status: 'CONFIRMADO' });
 

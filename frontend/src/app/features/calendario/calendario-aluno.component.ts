@@ -4,8 +4,8 @@ import { AulaApiService } from '../../core/services/aula-api.service';
 import { CheckinSyncService } from '../../offline/checkin-sync.service';
 import { CheckInService } from '../checkin/checkin.service';
 import { formatDateLocal } from '../../core/utils/data.util';
-import { DojofitCardComponent } from '../../shared/components/base/dojofit-card.component';
-import { DojofitButtonComponent } from '../../shared/components/base/dojofit-button.component';
+import { DojofitClassCardComponent } from '../../shared/components/composed/dojofit-class-card.component';
+import { DojofitCheckInButtonComponent } from '../../shared/components/composed/dojofit-check-in-button.component';
 
 /**
  * Calendário do Aluno (docs/02): grade semanal com check-in do dia da
@@ -15,7 +15,7 @@ import { DojofitButtonComponent } from '../../shared/components/base/dojofit-but
 @Component({
   selector: 'app-calendario-aluno',
   standalone: true,
-  imports: [DojofitCardComponent, DojofitButtonComponent],
+  imports: [DojofitClassCardComponent, DojofitCheckInButtonComponent],
   template: `
     <div>
       <h2 class="mb-4 text-title text-primary">Grade Semanal</h2>
@@ -41,34 +41,26 @@ import { DojofitButtonComponent } from '../../shared/components/base/dojofit-but
           } @else {
             <div class="space-y-2">
               @for (aula of getAulasForDate(day.date); track aula.id) {
-                <dojofit-card padding="sm" [class.opacity-50]="aula.cancelada">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-body font-medium text-primary">{{ aula.turmaNome ?? 'Avulsa' }}</p>
-                      <p class="text-caption text-secondary">{{ aula.horaInicio }} - {{ aula.horaFim }} | Prof. {{ aula.professorNome }}</p>
-                    </div>
-                    <div class="flex items-center gap-2 text-right">
-                      @if (aula.cancelada) {
-                        <span class="text-caption text-brand-alert">Cancelada</span>
-                      } @else {
-                        <span class="text-caption" [class]="aula.vagasDisponiveis > 0 ? 'text-state-success' : 'text-brand-alert'">
-                          {{ aula.vagasDisponiveis }} vagas
-                        </span>
-                        @if (checkinService.pendingAulaIds().has(aula.id)) {
-                          <span class="text-caption font-medium text-accent-blue-deep">⏱ Pendente</span>
-                        } @else if (isToday(day.date) && !checkinService.checkinIdPorAulaHoje().has(aula.id)) {
-                          <dojofit-button size="sm" (onClick)="checkin(aula)">Check-in</dojofit-button>
-                        }
-                        @if (checkinService.checkinIdPorAulaHoje().has(aula.id)) {
-                          <span class="text-caption font-medium text-state-success-deep">Presente</span>
-                          @if (isToday(day.date)) {
-                            <button (click)="cancelCheckin(aula)" class="text-caption text-brand-alert hover:underline">Desfazer</button>
-                          }
-                        }
-                      }
-                    </div>
-                  </div>
-                </dojofit-card>
+                <dojofit-class-card
+                  padding="sm"
+                  [className]="aula.turmaNome ?? 'Avulsa'"
+                  [time]="aula.horaInicio + ' - ' + aula.horaFim"
+                  [professorName]="aula.professorNome"
+                  [capacity]="{ current: aula.checkinsConfirmados, max: aula.capacidadeMaxima }"
+                  [cancelled]="aula.cancelada"
+                >
+                  @if (isToday(day.date)) {
+                    @if (checkinService.pendingAulaIds().has(aula.id)) {
+                      <span class="text-caption font-medium text-accent-blue-deep">⏱ Pendente</span>
+                    } @else {
+                      <dojofit-check-in-button
+                        size="sm"
+                        [state]="checkinService.estadoCheckInPara(aula.id)"
+                        (action)="onAction(aula)"
+                      />
+                    }
+                  }
+                </dojofit-class-card>
               }
             </div>
           }
@@ -130,6 +122,16 @@ export class CalendarioAlunoComponent implements OnInit {
     this.weekLabel = `${this.weekDays[0].date} a ${this.weekDays[6].date}`;
 
     this.aulaApi.getSemana(start).subscribe(data => this.aulas.set(data));
+  }
+
+  /** dojofit-check-in-button emite o mesmo evento para "fazer check-in" e "desfazer". */
+  onAction(aula: Aula) {
+    const estado = this.checkinService.estadoCheckInPara(aula.id);
+    if (estado === 'checked-in' || estado === 'waitlisted') {
+      this.cancelCheckin(aula);
+    } else if (estado === 'available') {
+      this.checkin(aula);
+    }
   }
 
   checkin(aula: Aula) {

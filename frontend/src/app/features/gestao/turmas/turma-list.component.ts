@@ -4,106 +4,79 @@ import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../environments/environment';
 import { Turma, DiaSemana } from '../../../core/models/turma.model';
 import { Usuario } from '../../../core/models/usuario.model';
+import { DojofitButtonComponent } from '../../../shared/components/base/dojofit-button.component';
+import { DojofitInputComponent } from '../../../shared/components/base/dojofit-input.component';
+import { DojofitFormGroupComponent } from '../components/dojofit-form-group.component';
+import { DojofitDataTableComponent, DojofitColumnDef } from '../components/dojofit-data-table.component';
 
 @Component({
   selector: 'app-turma-list',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, DojofitButtonComponent, DojofitInputComponent, DojofitFormGroupComponent, DojofitDataTableComponent],
   template: `
     <div>
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-brand-navy">Turmas</h2>
-        <button (click)="showForm.set(!showForm())" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
+      <div class="mb-6 flex items-center justify-between">
+        <h2 class="text-title text-primary">Turmas</h2>
+        <dojofit-button (onClick)="showForm.set(!showForm())">
           {{ showForm() ? 'Cancelar' : 'Nova Turma' }}
-        </button>
+        </dojofit-button>
       </div>
 
       @if (showForm()) {
-        <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-          <form (ngSubmit)="save()" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-              <input type="text" [(ngModel)]="form.nome" name="nome" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Dia da Semana</label>
-              <select [(ngModel)]="form.diaSemana" name="diaSemana" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
-                @for (dia of dias; track dia) {
-                  <option [value]="dia">{{ diaLabel(dia) }}</option>
+        <div class="mb-6">
+          <dojofit-form-group>
+            <form (ngSubmit)="save()" class="col-span-full grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <dojofit-input label="Nome" [(value)]="form.nome" />
+              <div>
+                <label class="mb-1 block text-label text-primary">Dia da Semana</label>
+                <select [(ngModel)]="form.diaSemana" name="diaSemana" required
+                  class="w-full rounded-button border border-default bg-surface-base px-3 py-2 text-body text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">
+                  @for (dia of dias; track dia) {
+                    <option [value]="dia">{{ diaLabel(dia) }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="mb-1 block text-label text-primary">Hora Inicio</label>
+                <input type="time" [(ngModel)]="form.horaInicio" name="horaInicio" required
+                  class="w-full rounded-button border border-default bg-surface-base px-3 py-2 text-body text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-blue" />
+              </div>
+              <div>
+                <label class="mb-1 block text-label text-primary">Hora Fim</label>
+                <input type="time" [(ngModel)]="form.horaFim" name="horaFim" required
+                  class="w-full rounded-button border border-default bg-surface-base px-3 py-2 text-body text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-blue" />
+              </div>
+              <dojofit-input label="Capacidade Maxima" type="number" [(value)]="form.capacidadeMaximaStr" />
+              <div>
+                <label class="mb-1 block text-label text-primary">Professor</label>
+                <select [(ngModel)]="form.professorId" name="professorId" required
+                  class="w-full rounded-button border border-default bg-surface-base px-3 py-2 text-body text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">
+                  <option [value]="null" disabled>Selecione um professor</option>
+                  @for (prof of professores(); track prof.id) {
+                    <option [ngValue]="prof.id">{{ prof.nome }}</option>
+                  }
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                @if (errorMessage()) {
+                  <div class="mb-2 rounded-button bg-brand-alert-soft px-3 py-2 text-body text-brand-alert-deep">{{ errorMessage() }}</div>
                 }
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Hora Inicio</label>
-              <input type="time" [(ngModel)]="form.horaInicio" name="horaInicio" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Hora Fim</label>
-              <input type="time" [(ngModel)]="form.horaFim" name="horaFim" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Capacidade Maxima</label>
-              <input type="number" [(ngModel)]="form.capacidadeMaxima" name="capacidadeMaxima" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Professor</label>
-              <select [(ngModel)]="form.professorId" name="professorId" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
-                <option [value]="null" disabled>Selecione um professor</option>
-                @for (prof of professores(); track prof.id) {
-                  <option [ngValue]="prof.id">{{ prof.nome }}</option>
-                }
-              </select>
-            </div>
-            <div class="sm:col-span-2">
-              @if (errorMessage()) {
-                <div class="mb-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{{ errorMessage() }}</div>
-              }
-              <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
-                {{ editingId ? 'Atualizar' : 'Criar' }}
-              </button>
-            </div>
-          </form>
+                <dojofit-button (onClick)="save()">{{ editingId ? 'Atualizar' : 'Criar' }}</dojofit-button>
+              </div>
+            </form>
+          </dojofit-form-group>
         </div>
       }
 
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Nome</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Dia</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Horario</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Capacidade</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Professor</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-700">Acoes</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            @for (turma of turmas(); track turma.id) {
-              <tr>
-                <td class="px-4 py-3">{{ turma.nome }}</td>
-                <td class="px-4 py-3">{{ diaLabel(turma.diaSemana) }}</td>
-                <td class="px-4 py-3">{{ turma.horaInicio }} - {{ turma.horaFim }}</td>
-                <td class="px-4 py-3">{{ turma.capacidadeMaxima }}</td>
-                <td class="px-4 py-3">{{ turma.professorNome }}</td>
-                <td class="px-4 py-3 text-right space-x-2">
-                  <button (click)="edit(turma)" class="text-brand-blue hover:underline">Editar</button>
-                  <button (click)="toggleAtivo(turma)" class="text-gray-500 hover:underline">
-                    {{ turma.ativo ? 'Desativar' : 'Ativar' }}
-                  </button>
-                  <button (click)="delete(turma)" class="text-brand-alert hover:underline">Excluir</button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+      <dojofit-data-table [columns]="columns" [rows]="turmas()" emptyStateMessage="Nenhuma turma cadastrada.">
+        <ng-template #rowActions let-turma>
+          <button (click)="edit(turma)" class="text-caption text-brand-blue hover:underline">Editar</button>
+          <button (click)="toggleAtivo(turma)" class="ml-2 text-caption text-secondary hover:underline">
+            {{ turma.ativo ? 'Desativar' : 'Ativar' }}
+          </button>
+          <button (click)="delete(turma)" class="ml-2 text-caption text-brand-alert hover:underline">Excluir</button>
+        </ng-template>
+      </dojofit-data-table>
     </div>
   `,
 })
@@ -114,7 +87,15 @@ export class TurmaListComponent implements OnInit {
   errorMessage = signal('');
   editingId: number | null = null;
   dias: DiaSemana[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-  form = { nome: '', diaSemana: 'MON' as DiaSemana, horaInicio: '', horaFim: '', capacidadeMaxima: 20, professorId: null as number | null };
+  form = { nome: '', diaSemana: 'MON' as DiaSemana, horaInicio: '', horaFim: '', capacidadeMaximaStr: '20', professorId: null as number | null };
+
+  columns: DojofitColumnDef<Turma>[] = [
+    { key: 'nome', label: 'Nome' },
+    { key: 'diaSemana', label: 'Dia', render: (t) => this.diaLabel(t.diaSemana) },
+    { key: 'horario', label: 'Horario', render: (t) => `${t.horaInicio} - ${t.horaFim}` },
+    { key: 'capacidadeMaxima', label: 'Capacidade' },
+    { key: 'professorNome', label: 'Professor' },
+  ];
 
   constructor(private http: HttpClient) {}
 
@@ -135,7 +116,7 @@ export class TurmaListComponent implements OnInit {
       return;
     }
 
-    const body = { ...this.form };
+    const body = { ...this.form, capacidadeMaxima: Number(this.form.capacidadeMaximaStr) };
     const req = this.editingId
       ? this.http.put(`${environment.apiUrl}/turmas/${this.editingId}`, body)
       : this.http.post(`${environment.apiUrl}/turmas`, body);
@@ -159,7 +140,7 @@ export class TurmaListComponent implements OnInit {
       diaSemana: turma.diaSemana,
       horaInicio: turma.horaInicio,
       horaFim: turma.horaFim,
-      capacidadeMaxima: turma.capacidadeMaxima,
+      capacidadeMaximaStr: String(turma.capacidadeMaxima),
       professorId: turma.professorId,
     };
     this.showForm.set(true);
@@ -179,7 +160,7 @@ export class TurmaListComponent implements OnInit {
 
   resetForm() {
     this.editingId = null;
-    this.form = { nome: '', diaSemana: 'MON', horaInicio: '', horaFim: '', capacidadeMaxima: 20, professorId: null };
+    this.form = { nome: '', diaSemana: 'MON', horaInicio: '', horaFim: '', capacidadeMaximaStr: '20', professorId: null };
     this.showForm.set(false);
   }
 

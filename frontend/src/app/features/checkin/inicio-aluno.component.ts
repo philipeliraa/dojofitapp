@@ -4,8 +4,9 @@ import { AulaApiService } from '../../core/services/aula-api.service';
 import { CheckinSyncService } from '../../offline/checkin-sync.service';
 import { CheckInService } from './checkin.service';
 import { formatDateLocal } from '../../core/utils/data.util';
-import { DojofitCardComponent } from '../../shared/components/base/dojofit-card.component';
-import { DojofitButtonComponent } from '../../shared/components/base/dojofit-button.component';
+import { DojofitStreakCardComponent } from '../../shared/components/composed/dojofit-streak-card.component';
+import { DojofitClassCardComponent } from '../../shared/components/composed/dojofit-class-card.component';
+import { DojofitCheckInButtonComponent } from '../../shared/components/composed/dojofit-check-in-button.component';
 import { DojofitBadgeComponent } from '../../shared/components/base/dojofit-badge.component';
 
 /**
@@ -16,25 +17,25 @@ import { DojofitBadgeComponent } from '../../shared/components/base/dojofit-badg
 @Component({
   selector: 'app-inicio-aluno',
   standalone: true,
-  imports: [DojofitCardComponent, DojofitButtonComponent, DojofitBadgeComponent],
+  imports: [DojofitStreakCardComponent, DojofitClassCardComponent, DojofitCheckInButtonComponent, DojofitBadgeComponent],
   template: `
     <div>
       <h2 class="mb-2 text-title text-primary">Aulas de Hoje</h2>
       <p class="mb-4 text-body text-secondary">{{ todayFormatted }}</p>
 
       @if (checkinService.streak(); as s) {
-        <dojofit-card>
-          <div class="mb-1 flex items-center justify-between">
-            <span class="text-display text-primary">
-              {{ s.weeklyStreak }} {{ s.weeklyStreak === 1 ? 'semana' : 'semanas' }}
-            </span>
-            @if (checkinService.weekInfo(); as w) {
-              <dojofit-badge>{{ w.count }}{{ w.limite ? ' / ' + w.limite : '' }} esta semana</dojofit-badge>
-            }
-          </div>
-          <p class="text-body text-secondary">{{ s.contextualMessage }}</p>
-        </dojofit-card>
-        <div class="mb-4"></div>
+        <div class="mb-4">
+          <dojofit-streak-card
+            [weeklyStreak]="s.weeklyStreak"
+            [averageSessionsPerWeek]="s.averagePerWeek"
+            [contextualMessage]="s.contextualMessage"
+          />
+          @if (checkinService.weekInfo(); as w) {
+            <div class="mt-2">
+              <dojofit-badge>{{ w.count }}{{ w.limite ? ' / ' + w.limite : '' }} check-ins esta semana</dojofit-badge>
+            </div>
+          }
+        </div>
       }
 
       @if (loading()) {
@@ -44,38 +45,26 @@ import { DojofitBadgeComponent } from '../../shared/components/base/dojofit-badg
       } @else {
         <div class="space-y-3">
           @for (aula of aulas(); track aula.id) {
-            <dojofit-card [class.opacity-50]="aula.cancelada">
-              <div class="mb-2 flex items-center justify-between">
-                <div>
-                  <h3 class="text-heading text-primary">{{ aula.turmaNome ?? 'Aula Avulsa' }}</h3>
-                  <p class="text-body text-secondary">{{ aula.horaInicio }} - {{ aula.horaFim }}</p>
-                  <p class="text-body text-secondary">Prof. {{ aula.professorNome }}</p>
-                </div>
-                <div class="text-right">
-                  <p class="text-body" [class]="aula.vagasDisponiveis > 0 ? 'text-state-success' : 'text-brand-alert'">
-                    {{ aula.vagasDisponiveis > 0 ? aula.vagasDisponiveis + ' vagas' : 'Lotada' }}
-                  </p>
-                  <p class="text-caption text-secondary">{{ aula.checkinsConfirmados }}/{{ aula.capacidadeMaxima }}</p>
-                </div>
-              </div>
-
-              @if (aula.cancelada) {
-                <span class="text-body font-medium text-brand-alert">Aula Cancelada</span>
-              } @else if (checkinService.pendingAulaIds().has(aula.id)) {
+            <dojofit-class-card
+              [className]="aula.turmaNome ?? 'Aula Avulsa'"
+              [time]="aula.horaInicio + ' - ' + aula.horaFim"
+              [professorName]="aula.professorNome"
+              [capacity]="{ current: aula.checkinsConfirmados, max: aula.capacidadeMaxima }"
+              [cancelled]="aula.cancelada"
+            >
+              @if (checkinService.pendingAulaIds().has(aula.id)) {
                 <div class="rounded-button border border-default bg-accent-blue-soft p-2 text-center">
                   <span class="text-body font-medium text-accent-blue-deep">⏱ Check-in pendente de sincronização</span>
                 </div>
-              } @else if (checkinService.checkinIdPorAulaHoje().has(aula.id)) {
-                <div class="flex items-center justify-between rounded-button border border-default bg-state-success-soft p-2">
-                  <span class="text-body font-medium text-state-success-deep">Check-in realizado!</span>
-                  <dojofit-button variant="alert" size="sm" (onClick)="cancelCheckin(aula.id)">Desfazer</dojofit-button>
-                </div>
               } @else {
-                <dojofit-button [fullWidth]="true" [loading]="checkingIn()" (onClick)="doCheckin(aula.id)">
-                  Fazer Check-in
-                </dojofit-button>
+                <dojofit-check-in-button
+                  [fullWidth]="true"
+                  [state]="checkinService.estadoCheckInPara(aula.id)"
+                  [loading]="checkingIn()"
+                  (action)="onAction(aula.id)"
+                />
               }
-            </dojofit-card>
+            </dojofit-class-card>
           }
         </div>
       }
@@ -123,6 +112,16 @@ export class InicioAlunoComponent implements OnInit {
       error: () => this.loading.set(false),
     });
     this.checkinService.carregarResumo();
+  }
+
+  /** dojofit-check-in-button emite o mesmo evento para "fazer check-in" e "desfazer" — o estado atual decide qual ação é essa. */
+  onAction(aulaId: number) {
+    const estado = this.checkinService.estadoCheckInPara(aulaId);
+    if (estado === 'checked-in' || estado === 'waitlisted') {
+      this.cancelCheckin(aulaId);
+    } else if (estado === 'available') {
+      this.doCheckin(aulaId);
+    }
   }
 
   doCheckin(aulaId: number) {

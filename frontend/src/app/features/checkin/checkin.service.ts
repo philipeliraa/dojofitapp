@@ -10,6 +10,7 @@ import { OfflineCheckinService, CheckinOutcome } from '../../offline/offline-che
 import { PendingCheckinQueueService } from '../../offline/pending-checkin-queue.service';
 import { CheckinSyncService } from '../../offline/checkin-sync.service';
 import { formatDateLocal } from '../../core/utils/data.util';
+import type { DojofitCheckInState } from '../../shared/components/composed/dojofit-check-in-button.component';
 
 export interface ResumoSemanal {
   count: number;
@@ -43,15 +44,37 @@ export class CheckInService {
 
   readonly pendingAulaIds = this.queue.pendingAulaIds;
 
-  /** Check-ins do próprio aluno hoje, por aula — check-in só vale no dia da aula (docs/01). */
-  readonly checkinIdPorAulaHoje = computed(() => {
+  /**
+   * Check-ins do próprio aluno hoje, por aula — check-in só vale no dia da
+   * aula (docs/01). Objeto completo (não só o id) para dar acesso ao
+   * status e distinguir confirmado de lista de espera (dojofit-check-in-button).
+   */
+  readonly checkinPorAulaHoje = computed(() => {
     const hoje = formatDateLocal(new Date());
-    const map = new Map<number, number>();
+    const map = new Map<number, Checkin>();
     this._historico()
       .filter(c => c.aulaData === hoje)
-      .forEach(c => map.set(c.aulaId, c.id));
+      .forEach(c => map.set(c.aulaId, c));
     return map;
   });
+
+  /**
+   * Estado para dojofit-check-in-button (docs/04): 'blocked' é proativo —
+   * calculado a partir do weekInfo já carregado, sem esperar o aluno
+   * clicar e o backend rejeitar, para não deixar tentar algo fadado a falhar
+   * (docs/05 seção 1).
+   */
+  estadoCheckInPara(aulaId: number): DojofitCheckInState {
+    const checkin = this.checkinPorAulaHoje().get(aulaId);
+    if (checkin) {
+      return checkin.status === 'LISTA_ESPERA' ? 'waitlisted' : 'checked-in';
+    }
+    const semana = this.weekInfo();
+    if (semana?.limite != null && semana.count >= semana.limite) {
+      return 'blocked';
+    }
+    return 'available';
+  }
 
   // --- Chamada do professor (roster de uma aula) ---
   private readonly _checkinsDaAula = signal<Checkin[]>([]);
@@ -84,10 +107,10 @@ export class CheckInService {
   }
 
   cancelCheckin(aulaId: number): Observable<void> {
-    const checkinId = this.checkinIdPorAulaHoje().get(aulaId);
-    if (!checkinId) return of(void 0);
+    const checkin = this.checkinPorAulaHoje().get(aulaId);
+    if (!checkin) return of(void 0);
 
-    return this.http.delete<void>(`${environment.apiUrl}/checkins/${checkinId}`).pipe(
+    return this.http.delete<void>(`${environment.apiUrl}/checkins/${checkin.id}`).pipe(
       tap(() => this.carregarResumo()),
     );
   }

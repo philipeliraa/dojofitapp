@@ -49,7 +49,7 @@ describe('ChamadaComponent', () => {
   it('selecionar uma aula carrega o roster de check-ins', async () => {
     const { fixture } = await setup();
 
-    fixture.nativeElement.querySelector('dojofit-card button').click();
+    fixture.nativeElement.querySelector('button').click();
     httpMock.expectOne(`${environment.apiUrl}/checkins/aula/1`).flush([
       { id: 1, aulaId: 1, alunoId: 5, alunoNome: 'Aluno Um', dataHoraCheckin: '', tipo: 'PROPRIO', status: 'CONFIRMADO', turmaNome: '', aulaData: hoje, aulaHoraInicio: '' },
     ]);
@@ -62,7 +62,7 @@ describe('ChamadaComponent', () => {
   it('check-in manual chama o backend e recarrega o roster', async () => {
     const { fixture } = await setup();
 
-    fixture.nativeElement.querySelector('dojofit-card button').click();
+    fixture.nativeElement.querySelector('button').click();
     httpMock.expectOne(`${environment.apiUrl}/checkins/aula/1`).flush([]);
     fixture.detectChanges();
 
@@ -85,7 +85,7 @@ describe('ChamadaComponent', () => {
   it('liberar exceção da lista de espera', async () => {
     const { fixture } = await setup();
 
-    fixture.nativeElement.querySelector('dojofit-card button').click();
+    fixture.nativeElement.querySelector('button').click();
     httpMock.expectOne(`${environment.apiUrl}/checkins/aula/1`).flush([
       { id: 3, aulaId: 1, alunoId: 8, alunoNome: 'Espera', dataHoraCheckin: '', tipo: 'PROPRIO', status: 'LISTA_ESPERA', turmaNome: '', aulaData: hoje, aulaHoraInicio: '' },
     ]);

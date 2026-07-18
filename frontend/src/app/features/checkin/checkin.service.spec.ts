@@ -58,7 +58,7 @@ describe('CheckInService', () => {
     expect(service.streak()?.weeklyStreak).toBe(1);
   });
 
-  it('checkinIdPorAulaHoje filtra o histórico por check-ins de HOJE (docs/01)', () => {
+  it('checkinPorAulaHoje filtra o histórico por check-ins de HOJE (docs/01)', () => {
     service.carregarResumo();
     httpMock.expectOne(`${environment.apiUrl}/checkins/historico`).flush([
       { id: 1, aulaId: 10, aulaData: hoje, alunoId: 1, alunoNome: 'A', dataHoraCheckin: '', tipo: 'PROPRIO', status: 'CONFIRMADO', turmaNome: '', aulaHoraInicio: '' },
@@ -67,9 +67,49 @@ describe('CheckInService', () => {
     httpMock.expectOne(`${environment.apiUrl}/checkins/semana`).flush({ count: 1 });
     httpMock.expectOne(`${environment.apiUrl}/checkins/streak`).flush({ weeklyStreak: 0, averagePerWeek: 0, trainedThisWeek: false, contextualMessage: '' });
 
-    const map = service.checkinIdPorAulaHoje();
-    expect(map.get(10)).toBe(1);
+    const map = service.checkinPorAulaHoje();
+    expect(map.get(10)?.id).toBe(1);
     expect(map.has(20)).toBe(false);
+  });
+
+  it('estadoCheckInPara: sem check-in e dentro do limite é "available"', () => {
+    service.carregarResumo();
+    httpMock.expectOne(`${environment.apiUrl}/checkins/historico`).flush([]);
+    httpMock.expectOne(`${environment.apiUrl}/checkins/semana`).flush({ count: 1, limite: 3 });
+    httpMock.expectOne(`${environment.apiUrl}/checkins/streak`).flush({ weeklyStreak: 0, averagePerWeek: 0, trainedThisWeek: false, contextualMessage: '' });
+
+    expect(service.estadoCheckInPara(42)).toBe('available');
+  });
+
+  it('estadoCheckInPara: limite semanal atingido é "blocked" — proativo, sem esperar o clique (docs/05)', () => {
+    service.carregarResumo();
+    httpMock.expectOne(`${environment.apiUrl}/checkins/historico`).flush([]);
+    httpMock.expectOne(`${environment.apiUrl}/checkins/semana`).flush({ count: 3, limite: 3 });
+    httpMock.expectOne(`${environment.apiUrl}/checkins/streak`).flush({ weeklyStreak: 0, averagePerWeek: 0, trainedThisWeek: false, contextualMessage: '' });
+
+    expect(service.estadoCheckInPara(42)).toBe('blocked');
+  });
+
+  it('estadoCheckInPara: check-in confirmado é "checked-in"', () => {
+    service.carregarResumo();
+    httpMock.expectOne(`${environment.apiUrl}/checkins/historico`).flush([
+      { id: 1, aulaId: 42, aulaData: hoje, alunoId: 1, alunoNome: 'A', dataHoraCheckin: '', tipo: 'PROPRIO', status: 'CONFIRMADO', turmaNome: '', aulaHoraInicio: '' },
+    ]);
+    httpMock.expectOne(`${environment.apiUrl}/checkins/semana`).flush({ count: 1 });
+    httpMock.expectOne(`${environment.apiUrl}/checkins/streak`).flush({ weeklyStreak: 0, averagePerWeek: 0, trainedThisWeek: false, contextualMessage: '' });
+
+    expect(service.estadoCheckInPara(42)).toBe('checked-in');
+  });
+
+  it('estadoCheckInPara: check-in em lista de espera é "waitlisted", não "checked-in"', () => {
+    service.carregarResumo();
+    httpMock.expectOne(`${environment.apiUrl}/checkins/historico`).flush([
+      { id: 1, aulaId: 42, aulaData: hoje, alunoId: 1, alunoNome: 'A', dataHoraCheckin: '', tipo: 'PROPRIO', status: 'LISTA_ESPERA', turmaNome: '', aulaHoraInicio: '' },
+    ]);
+    httpMock.expectOne(`${environment.apiUrl}/checkins/semana`).flush({ count: 1 });
+    httpMock.expectOne(`${environment.apiUrl}/checkins/streak`).flush({ weeklyStreak: 0, averagePerWeek: 0, trainedThisWeek: false, contextualMessage: '' });
+
+    expect(service.estadoCheckInPara(42)).toBe('waitlisted');
   });
 
   it('checkin confirmado recarrega o resumo automaticamente', async () => {

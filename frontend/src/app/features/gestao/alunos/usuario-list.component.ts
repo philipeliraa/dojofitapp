@@ -3,6 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../environments/environment';
 import { Usuario, Role } from '../../../core/models/usuario.model';
+import { DojofitButtonComponent } from '../../../shared/components/base/dojofit-button.component';
+import { DojofitInputComponent } from '../../../shared/components/base/dojofit-input.component';
+import { DojofitFormGroupComponent } from '../components/dojofit-form-group.component';
+import { DojofitDataTableComponent, DojofitColumnDef } from '../components/dojofit-data-table.component';
 
 interface Convite {
   id: number;
@@ -15,145 +19,103 @@ interface Convite {
 @Component({
   selector: 'app-usuario-list',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, DojofitButtonComponent, DojofitInputComponent, DojofitFormGroupComponent, DojofitDataTableComponent],
   template: `
     <div>
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-brand-navy">Usuarios</h2>
-        <div class="space-x-2">
-          <button (click)="showInviteForm.set(!showInviteForm())" class="border border-brand-blue text-brand-blue px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/10">
+      <div class="mb-6 flex items-center justify-between">
+        <h2 class="text-title text-primary">Usuarios</h2>
+        <div class="flex gap-2">
+          <dojofit-button variant="secondary" (onClick)="showInviteForm.set(!showInviteForm())">
             {{ showInviteForm() ? 'Fechar convite' : 'Convidar' }}
-          </button>
-          <button (click)="showForm.set(!showForm())" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
+          </dojofit-button>
+          <dojofit-button (onClick)="showForm.set(!showForm())">
             {{ showForm() ? 'Cancelar' : 'Novo Usuario' }}
-          </button>
+          </dojofit-button>
         </div>
       </div>
 
       @if (showInviteForm()) {
-        <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-          <h3 class="text-sm font-medium text-gray-700 mb-3">Convidar por link — o papel é definido aqui, nunca pelo convidado</h3>
-          <form (ngSubmit)="criarConvite()" class="flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-48">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Email do convidado</label>
-              <input type="email" [(ngModel)]="inviteForm.email" name="inviteEmail" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Papel</label>
-              <select [(ngModel)]="inviteForm.role" name="inviteRole" required
-                class="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
-                <option value="ALUNO">Aluno</option>
-                <option value="PROFESSOR">Professor</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
-            <button type="submit" [disabled]="inviteLoading()"
-              class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90 disabled:opacity-50">
-              {{ inviteLoading() ? 'Gerando...' : 'Gerar link' }}
-            </button>
-          </form>
+        <div class="mb-6">
+          <dojofit-form-group label="Convidar por link — o papel é definido aqui, nunca pelo convidado">
+            <form (ngSubmit)="criarConvite()" class="col-span-full flex flex-wrap items-end gap-3">
+              <div class="min-w-48 flex-1">
+                <dojofit-input label="Email do convidado" type="email" [(value)]="inviteForm.email" />
+              </div>
+              <div>
+                <label class="mb-1 block text-label text-primary">Papel</label>
+                <select [(ngModel)]="inviteForm.role" name="inviteRole" required
+                  class="rounded-button border border-default bg-surface-base px-3 py-2 text-body text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">
+                  <option value="ALUNO">Aluno</option>
+                  <option value="PROFESSOR">Professor</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              <dojofit-button [loading]="inviteLoading()" (onClick)="criarConvite()">Gerar link</dojofit-button>
+            </form>
 
-          @if (inviteError()) {
-            <p class="text-sm text-brand-alert mt-3">{{ inviteError() }}</p>
-          }
+            @if (inviteError()) {
+              <p class="col-span-full text-body text-brand-alert">{{ inviteError() }}</p>
+            }
 
-          @if (inviteLink()) {
-            <div class="mt-4 flex items-center gap-2">
-              <input type="text" [value]="inviteLink()" readonly
-                class="flex-1 px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-xs text-gray-600 outline-none" />
-              <button type="button" (click)="copiarLink()" class="text-brand-blue text-sm hover:underline">
-                {{ linkCopiado() ? 'Copiado!' : 'Copiar' }}
-              </button>
-            </div>
-            <p class="text-xs text-gray-400 mt-1">Envie este link ao convidado — válido por 7 dias, uso único.</p>
-          }
+            @if (inviteLink()) {
+              <div class="col-span-full flex items-center gap-2">
+                <input type="text" [value]="inviteLink()" readonly
+                  class="flex-1 rounded-button border border-default bg-surface-body px-3 py-2 text-caption text-secondary outline-none" />
+                <button type="button" (click)="copiarLink()" class="text-body text-brand-blue hover:underline">
+                  {{ linkCopiado() ? 'Copiado!' : 'Copiar' }}
+                </button>
+              </div>
+              <p class="col-span-full text-caption text-secondary">Envie este link ao convidado — válido por 7 dias, uso único.</p>
+            }
 
-          @if (convites().length > 0) {
-            <div class="mt-4 border-t border-gray-100 pt-3">
-              <p class="text-xs font-medium text-gray-500 mb-2">Convites pendentes</p>
-              @for (convite of convites(); track convite.id) {
-                <div class="flex items-center justify-between py-1 text-sm">
-                  <span class="text-gray-700">{{ convite.email }} <span class="text-gray-400">({{ convite.role }})</span></span>
-                  <button type="button" (click)="copiarLinkDe(convite)" class="text-brand-blue text-xs hover:underline">Copiar link</button>
-                </div>
-              }
-            </div>
-          }
+            @if (convites().length > 0) {
+              <div class="col-span-full border-t border-default pt-3">
+                <p class="mb-2 text-caption font-medium text-secondary">Convites pendentes</p>
+                @for (convite of convites(); track convite.id) {
+                  <div class="flex items-center justify-between py-1 text-body">
+                    <span class="text-primary">{{ convite.email }} <span class="text-secondary">({{ convite.role }})</span></span>
+                    <button type="button" (click)="copiarLinkDe(convite)" class="text-caption text-brand-blue hover:underline">Copiar link</button>
+                  </div>
+                }
+              </div>
+            }
+          </dojofit-form-group>
         </div>
       }
 
       @if (showForm()) {
-        <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-          <form (ngSubmit)="save()" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-              <input type="text" [(ngModel)]="form.nome" name="nome" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" [(ngModel)]="form.email" name="email" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-              <input type="password" [(ngModel)]="form.senha" name="senha" [required]="!editingId"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue"
-                placeholder="{{ editingId ? 'Deixe vazio para manter' : '' }}" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Perfil</label>
-              <select [(ngModel)]="form.role" name="role" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-blue">
-                <option value="ALUNO">Aluno</option>
-                <option value="PROFESSOR">Professor</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
-            <div class="sm:col-span-2">
-              <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-blue/90">
-                {{ editingId ? 'Atualizar' : 'Criar' }}
-              </button>
-            </div>
-          </form>
+        <div class="mb-6">
+          <dojofit-form-group>
+            <form (ngSubmit)="save()" class="col-span-full grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <dojofit-input label="Nome" [(value)]="form.nome" />
+              <dojofit-input label="Email" type="email" [(value)]="form.email" />
+              <dojofit-input label="Senha" type="password" [(value)]="form.senha" />
+              <div>
+                <label class="mb-1 block text-label text-primary">Perfil</label>
+                <select [(ngModel)]="form.role" name="role" required
+                  class="w-full rounded-button border border-default bg-surface-base px-3 py-2 text-body text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-blue">
+                  <option value="ALUNO">Aluno</option>
+                  <option value="PROFESSOR">Professor</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <dojofit-button (onClick)="save()">{{ editingId ? 'Atualizar' : 'Criar' }}</dojofit-button>
+              </div>
+            </form>
+          </dojofit-form-group>
         </div>
       }
 
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Nome</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Email</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Perfil</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-700">Status</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-700">Acoes</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            @for (user of usuarios(); track user.id) {
-              <tr>
-                <td class="px-4 py-3">{{ user.nome }}</td>
-                <td class="px-4 py-3">{{ user.email }}</td>
-                <td class="px-4 py-3">{{ user.role }}</td>
-                <td class="px-4 py-3">
-                  <span [class]="user.ativo ? 'text-green-600' : 'text-red-500'">
-                    {{ user.ativo ? 'Ativo' : 'Inativo' }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-right space-x-2">
-                  <button (click)="edit(user)" class="text-brand-blue hover:underline">Editar</button>
-                  <button (click)="toggleAtivo(user)" class="text-gray-500 hover:underline">
-                    {{ user.ativo ? 'Desativar' : 'Ativar' }}
-                  </button>
-                  <button (click)="delete(user)" class="text-brand-alert hover:underline">Excluir</button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+      <dojofit-data-table [columns]="columns" [rows]="usuarios()" emptyStateMessage="Nenhum usuário cadastrado.">
+        <ng-template #rowActions let-user>
+          <button (click)="edit(user)" class="text-caption text-brand-blue hover:underline">Editar</button>
+          <button (click)="toggleAtivo(user)" class="ml-2 text-caption text-secondary hover:underline">
+            {{ user.ativo ? 'Desativar' : 'Ativar' }}
+          </button>
+          <button (click)="delete(user)" class="ml-2 text-caption text-brand-alert hover:underline">Excluir</button>
+        </ng-template>
+      </dojofit-data-table>
     </div>
   `,
 })
@@ -170,6 +132,13 @@ export class UsuarioListComponent implements OnInit {
   inviteError = signal('');
   inviteLink = signal('');
   linkCopiado = signal(false);
+
+  columns: DojofitColumnDef<Usuario>[] = [
+    { key: 'nome', label: 'Nome' },
+    { key: 'email', label: 'Email' },
+    { key: 'role', label: 'Perfil' },
+    { key: 'ativo', label: 'Status', render: (u) => (u.ativo ? 'Ativo' : 'Inativo') },
+  ];
 
   constructor(private http: HttpClient) {}
 

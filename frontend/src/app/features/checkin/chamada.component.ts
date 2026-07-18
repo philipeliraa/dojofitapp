@@ -7,6 +7,7 @@ import { DojofitCardComponent } from '../../shared/components/base/dojofit-card.
 import { DojofitButtonComponent } from '../../shared/components/base/dojofit-button.component';
 import { DojofitBadgeComponent } from '../../shared/components/base/dojofit-badge.component';
 import { DojofitInputComponent } from '../../shared/components/base/dojofit-input.component';
+import { DojofitClassCardComponent } from '../../shared/components/composed/dojofit-class-card.component';
 
 /**
  * Início do Professor/Admin (docs/02): turmas de hoje + lista de presença.
@@ -16,23 +17,26 @@ import { DojofitInputComponent } from '../../shared/components/base/dojofit-inpu
 @Component({
   selector: 'app-chamada',
   standalone: true,
-  imports: [DojofitCardComponent, DojofitButtonComponent, DojofitBadgeComponent, DojofitInputComponent],
+  imports: [DojofitCardComponent, DojofitButtonComponent, DojofitBadgeComponent, DojofitInputComponent, DojofitClassCardComponent],
   template: `
     <div>
       <h2 class="mb-4 text-title text-primary">Chamada</h2>
 
       <div class="mb-6 space-y-2">
         @for (aula of aulas(); track aula.id) {
-          <dojofit-card padding="sm">
-            <button
-              class="w-full text-left"
-              [class.text-brand-blue]="selectedAula()?.id === aula.id"
-              (click)="selectAula(aula)"
-            >
-              <p class="text-body font-medium text-primary">{{ aula.turmaNome ?? 'Avulsa' }}</p>
-              <p class="text-caption text-secondary">{{ aula.horaInicio }} - {{ aula.horaFim }} | {{ aula.checkinsConfirmados }}/{{ aula.capacidadeMaxima }}</p>
-            </button>
-          </dojofit-card>
+          <button
+            class="block w-full text-left"
+            [class.ring-2]="selectedAula()?.id === aula.id"
+            [class.ring-brand-blue]="selectedAula()?.id === aula.id"
+            (click)="selectAula(aula)"
+          >
+            <dojofit-class-card
+              padding="sm"
+              [className]="aula.turmaNome ?? 'Avulsa'"
+              [time]="aula.horaInicio + ' - ' + aula.horaFim"
+              [capacity]="{ current: aula.checkinsConfirmados, max: aula.capacidadeMaxima }"
+            />
+          </button>
         }
         @if (aulas().length === 0) {
           <p class="py-4 text-center text-body text-secondary">Nenhuma aula hoje</p>
