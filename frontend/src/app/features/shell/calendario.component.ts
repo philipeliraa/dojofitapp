@@ -1,23 +1,22 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
-import { StudentScheduleComponent } from '../student/schedule/student-schedule.component';
-import { ProfessorScheduleComponent } from '../professor/schedule/professor-schedule.component';
+import { CalendarioAlunoComponent } from '../calendario/calendario-aluno.component';
+import { CalendarioProfessorComponent } from '../calendario/calendario-professor.component';
 
 /**
- * Calendário (docs/02): mesma lógica de troca por papel do Início — ver
- * comentário em inicio.component.ts. A fusão real (override manual do
- * professor dentro do próprio Calendário, hoje só em Gestão/Chamada) é
- * trabalho da etapa 5.5.
+ * Calendário (docs/02): mesma lógica de troca por papel do Início. A
+ * consolidação da etapa 5.5 já entrega o override manual do professor
+ * embutido no Calendário (antes só existia na Chamada/Início).
  */
 @Component({
   selector: 'app-calendario',
   standalone: true,
-  imports: [StudentScheduleComponent, ProfessorScheduleComponent],
+  imports: [CalendarioAlunoComponent, CalendarioProfessorComponent],
   template: `
     @if (authService.role() === 'ALUNO') {
-      <app-student-schedule />
+      <app-calendario-aluno />
     } @else {
-      <app-professor-schedule />
+      <app-calendario-professor />
     }
   `,
 })

@@ -1,17 +1,29 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CalendarioComponent } from './calendario.component';
 import { AuthService } from '../../core/services/auth.service';
 import { Usuario } from '../../core/models/usuario.model';
 import { provideRouter } from '@angular/router';
+import { PendingCheckinQueueService } from '../../offline/pending-checkin-queue.service';
+import { CheckinSyncService } from '../../offline/checkin-sync.service';
 
 describe('CalendarioComponent', () => {
-  function setup(role: Usuario['role']) {
+  let httpMock: HttpTestingController;
+
+  async function setup(role: Usuario['role']) {
     TestBed.configureTestingModule({
       imports: [CalendarioComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
+    httpMock = TestBed.inject(HttpTestingController);
+
+    const queue = TestBed.inject(PendingCheckinQueueService);
+    queue.dbName = 'dojofit-offline-test';
+    await queue.clear();
+    TestBed.inject(CheckinSyncService).baseDelayMs = 0;
+    await new Promise(r => setTimeout(r, 0));
+
     const fixture = TestBed.createComponent(CalendarioComponent);
     const authService = TestBed.inject(AuthService);
     authService.handleAuth({
@@ -19,18 +31,22 @@ describe('CalendarioComponent', () => {
       user: { id: 1, nome: 'Teste', email: 'a@dojofit.com', role, ativo: true, criadoEm: '' } as Usuario,
     });
     fixture.detectChanges();
+    httpMock.match(() => true).forEach(req => req.flush([]));
+    fixture.detectChanges();
     return { fixture };
   }
 
-  it('monta app-student-schedule para ALUNO', () => {
-    const { fixture } = setup('ALUNO');
-    expect(fixture.nativeElement.querySelector('app-student-schedule')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('app-professor-schedule')).toBeNull();
+  afterEach(() => httpMock.verify());
+
+  it('monta app-calendario-aluno para ALUNO', async () => {
+    const { fixture } = await setup('ALUNO');
+    expect(fixture.nativeElement.querySelector('app-calendario-aluno')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-calendario-professor')).toBeNull();
   });
 
-  it('monta app-professor-schedule para PROFESSOR/ADMIN', () => {
-    const { fixture } = setup('PROFESSOR');
-    expect(fixture.nativeElement.querySelector('app-professor-schedule')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('app-student-schedule')).toBeNull();
+  it('monta app-calendario-professor para PROFESSOR/ADMIN', async () => {
+    const { fixture } = await setup('PROFESSOR');
+    expect(fixture.nativeElement.querySelector('app-calendario-professor')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-calendario-aluno')).toBeNull();
   });
 });

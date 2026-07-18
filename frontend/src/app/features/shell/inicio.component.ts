@@ -1,24 +1,23 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
-import { StudentHomeComponent } from '../student/home/student-home.component';
-import { AttendanceComponent } from '../professor/attendance/attendance.component';
+import { InicioAlunoComponent } from '../checkin/inicio-aluno.component';
+import { ChamadaComponent } from '../checkin/chamada.component';
 
 /**
  * Início (docs/02): uma tela, conteúdo por papel — Aluno vê a jornada
  * pessoal (streak, aulas do dia); Professor/Admin vê a operação do dia
- * (turmas, presença). Aqui só troca QUAL componente já existente é
- * montado — a consolidação de verdade (um único CheckInService em vez
- * dos três atuais) é trabalho da etapa 5.5.
+ * (turmas, presença). Consolidação da etapa 5.5: ambos consomem o mesmo
+ * CheckInService, antes cada um tinha sua própria lógica duplicada.
  */
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [StudentHomeComponent, AttendanceComponent],
+  imports: [InicioAlunoComponent, ChamadaComponent],
   template: `
     @if (authService.role() === 'ALUNO') {
-      <app-student-home />
+      <app-inicio-aluno />
     } @else {
-      <app-attendance />
+      <app-chamada />
     }
   `,
 })

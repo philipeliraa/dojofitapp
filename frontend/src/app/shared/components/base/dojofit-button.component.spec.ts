@@ -11,6 +11,7 @@ import { DojofitButtonComponent, DojofitButtonSize, DojofitButtonVariant } from 
       [size]="size"
       [disabled]="disabled"
       [loading]="loading"
+      [fullWidth]="fullWidth"
       (onClick)="clicked = true"
     >Entrar</dojofit-button>
   `,
@@ -20,6 +21,7 @@ class HostComponent {
   size: DojofitButtonSize = 'md';
   disabled = false;
   loading = false;
+  fullWidth = false;
   clicked = false;
 }
 
@@ -63,6 +65,14 @@ describe('DojofitButtonComponent', () => {
     fixture.detectChanges();
     expect(button.className).toContain('py-2 ');
     expect(button.className).not.toContain('py-2.5');
+  });
+
+  it('fullWidth aplica w-full (ação principal de tela, ex: Fazer Check-in)', () => {
+    const { fixture, button } = setup();
+    expect(button.className).not.toContain('w-full');
+    fixture.componentInstance.fullWidth = true;
+    fixture.detectChanges();
+    expect(button.className).toContain('w-full');
   });
 
   it('disabled aplica o atributo nativo e impede o clique', () => {

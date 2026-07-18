@@ -32,6 +32,8 @@ export class DojofitButtonComponent {
   size = input<DojofitButtonSize>('md');
   disabled = input(false);
   loading = input(false);
+  /** Ocupa a largura do container — para a ação principal de uma tela (ex: "Fazer Check-in"). */
+  fullWidth = input(false);
 
   onClick = output<void>();
 
@@ -50,7 +52,9 @@ export class DojofitButtonComponent {
       alert: 'bg-brand-alert text-white hover:bg-brand-alert/90',
     };
 
-    return `${base} ${sizeClasses} ${variantClasses[this.variant()]}`;
+    const widthClasses = this.fullWidth() ? 'w-full' : '';
+
+    return `${base} ${sizeClasses} ${variantClasses[this.variant()]} ${widthClasses}`;
   });
 
   protected handleClick(): void {

@@ -1,10 +1,11 @@
-import { Component, computed } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 import { iniciaisDoNome } from '../../core/utils/nome.util';
 import { DojofitAvatarComponent } from '../../shared/components/base/dojofit-avatar.component';
 import { DojofitCardComponent } from '../../shared/components/base/dojofit-card.component';
-import { MyContractComponent } from '../student/contract/my-contract.component';
-import { CheckinHistoryComponent } from '../student/history/checkin-history.component';
+import { MeuContratoComponent } from './meu-contrato.component';
+import { HistoricoCheckinComponent } from './historico-checkin.component';
+import { CheckInService } from '../checkin/checkin.service';
 
 /**
  * Perfil (docs/02): dados pessoais para todos os papéis. Para o Aluno,
@@ -15,7 +16,7 @@ import { CheckinHistoryComponent } from '../student/history/checkin-history.comp
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [DojofitAvatarComponent, DojofitCardComponent, MyContractComponent, CheckinHistoryComponent],
+  imports: [DojofitAvatarComponent, DojofitCardComponent, MeuContratoComponent, HistoricoCheckinComponent],
   template: `
     <div class="space-y-4">
       <dojofit-card>
@@ -31,14 +32,22 @@ import { CheckinHistoryComponent } from '../student/history/checkin-history.comp
       </dojofit-card>
 
       @if (authService.role() === 'ALUNO') {
-        <app-my-contract />
-        <app-checkin-history />
+        <app-meu-contrato />
+        <app-historico-checkin />
       }
     </div>
   `,
 })
-export class PerfilComponent {
-  constructor(public authService: AuthService) {}
+export class PerfilComponent implements OnInit {
+  protected authService = inject(AuthService);
+  private checkinService = inject(CheckInService);
 
   protected readonly initials = computed(() => iniciaisDoNome(this.authService.user()?.nome));
+
+  ngOnInit() {
+    // Meu Contrato e Histórico consomem weekInfo/historico do CheckInService
+    if (this.authService.role() === 'ALUNO') {
+      this.checkinService.carregarResumo();
+    }
+  }
 }

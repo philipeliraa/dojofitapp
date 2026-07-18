@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../environments/environment';
 import { Aula } from '../../../core/models/aula.model';
+import { formatDateLocal } from '../../../core/utils/data.util';
 
 @Component({
   selector: 'app-aula-management',
@@ -54,7 +55,7 @@ import { Aula } from '../../../core/models/aula.model';
 })
 export class AulaManagementComponent implements OnInit {
   aulas = signal<Aula[]>([]);
-  selectedDate = new Date().toISOString().split('T')[0];
+  selectedDate = formatDateLocal(new Date());
 
   constructor(private http: HttpClient) {}
 
