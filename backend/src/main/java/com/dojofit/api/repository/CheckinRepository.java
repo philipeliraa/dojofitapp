@@ -30,4 +30,6 @@ public interface CheckinRepository extends JpaRepository<Checkin, Long> {
 
     @Query("SELECT c FROM Checkin c JOIN FETCH c.aula a LEFT JOIN FETCH a.turma WHERE c.aluno.id = :alunoId ORDER BY c.dataHoraCheckin DESC")
     List<Checkin> findHistoricoByAlunoId(Long alunoId);
+
+    long countByAlunoId(Long alunoId);
 }

@@ -76,10 +76,10 @@ export class AppShellComponent {
       { path: '/perfil', label: 'Perfil', icon: '👤', exact: false },
     ];
 
-    // Gestão é visível para Professor (acesso parcial) e Admin (completo)
-    // — docs/02 seção 2. Hoje só as rotas do Admin existem (seção 4);
-    // acesso parcial do Professor (Turmas/Alunos em leitura) é trabalho futuro.
-    if (this.authService.role() === 'ADMIN') {
+    // Gestão é visível para Professor (acesso parcial: Alunos/coaching) e Admin
+    // (completo) — docs/02 seção 2. As seções internas restringem por papel.
+    const role = this.authService.role();
+    if (role === 'ADMIN' || role === 'PROFESSOR') {
       items.push({ path: '/gestao', label: 'Gestão', icon: '⚙️', exact: false });
     }
 

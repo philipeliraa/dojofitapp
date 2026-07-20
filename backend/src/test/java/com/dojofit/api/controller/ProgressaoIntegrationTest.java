@@ -134,6 +134,29 @@ class ProgressaoIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("Equipe lista alunos; aluno não tem acesso à seção de coaching")
+    void listaDeAlunosRestritaAEquipe() throws Exception {
+        mockMvc.perform(get("/api/alunos")
+                        .header("Authorization", "Bearer " + professorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == " + aluno.getId() + ")]").isNotEmpty());
+
+        mockMvc.perform(get("/api/alunos")
+                        .header("Authorization", "Bearer " + alunoToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Detalhe do aluno traz nome e total de check-ins (frequência)")
+    void detalheDoAluno() throws Exception {
+        mockMvc.perform(get("/api/alunos/" + aluno.getId())
+                        .header("Authorization", "Bearer " + professorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value(aluno.getNome()))
+                .andExpect(jsonPath("$.totalCheckins").value(0));
+    }
+
+    @Test
     @DisplayName("Grau acima do máximo da faixa é rejeitado com 422")
     void grauInvalidoRejeitado() throws Exception {
         Faixa azul = faixas.get(1); // grausMax 4

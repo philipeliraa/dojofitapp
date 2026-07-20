@@ -21,16 +21,21 @@ export const routes: Routes = [
         path: 'gestao',
         loadComponent: () => import('./features/shell/gestao-layout.component').then(m => m.GestaoLayoutComponent),
         canActivate: [roleGuard],
-        // Professor tem acesso parcial (docs/02 seção 2: Turmas, Alunos em
-        // leitura) — ainda não implementado; hoje só o Admin tem rotas aqui.
-        data: { roles: ['ADMIN'] },
+        // Professor tem acesso parcial (docs/02 seção 2): a seção Alunos, para
+        // coaching e graduação (Fase 3a). Admin tem acesso completo — as demais
+        // seções restringem a ADMIN via guard próprio no filho.
+        data: { roles: ['PROFESSOR', 'ADMIN'] },
         children: [
-          { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
-          { path: 'usuarios', loadComponent: () => import('./features/gestao/alunos/usuario-list.component').then(m => m.UsuarioListComponent) },
-          { path: 'turmas', loadComponent: () => import('./features/gestao/turmas/turma-list.component').then(m => m.TurmaListComponent) },
-          { path: 'aulas', loadComponent: () => import('./features/gestao/turmas/aula-management.component').then(m => m.AulaManagementComponent) },
-          { path: 'planos', loadComponent: () => import('./features/gestao/contratos/plano-list.component').then(m => m.PlanoListComponent) },
-          { path: 'contratos', loadComponent: () => import('./features/gestao/contratos/contrato-list.component').then(m => m.ContratoListComponent) },
+          { path: '', redirectTo: 'alunos', pathMatch: 'full' },
+          // Alunos: Professor + Admin (herda o guard do pai)
+          { path: 'alunos', loadComponent: () => import('./features/gestao/alunos/aluno-list.component').then(m => m.AlunoListComponent) },
+          { path: 'alunos/:id', loadComponent: () => import('./features/gestao/alunos/aluno-detalhe.component').then(m => m.AlunoDetalheComponent) },
+          // Demais seções: exclusivas do Admin
+          { path: 'usuarios', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/alunos/usuario-list.component').then(m => m.UsuarioListComponent) },
+          { path: 'turmas', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/turmas/turma-list.component').then(m => m.TurmaListComponent) },
+          { path: 'aulas', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/turmas/aula-management.component').then(m => m.AulaManagementComponent) },
+          { path: 'planos', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/contratos/plano-list.component').then(m => m.PlanoListComponent) },
+          { path: 'contratos', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/contratos/contrato-list.component').then(m => m.ContratoListComponent) },
         ],
       },
     ],

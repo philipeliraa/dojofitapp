@@ -43,6 +43,12 @@ describe('AppShellComponent', () => {
     expect(nav).toContain('Gestão');
   });
 
+  it('Professor vê o item de navegação Gestão (acesso parcial, docs/02 §2)', () => {
+    const { fixture } = setup('PROFESSOR');
+    const nav = fixture.nativeElement.querySelector('nav').textContent as string;
+    expect(nav).toContain('Gestão');
+  });
+
   it('mostra as iniciais do usuário logado no avatar do header', () => {
     const { fixture } = setup('ALUNO');
     expect(fixture.nativeElement.textContent).toContain('AT');
