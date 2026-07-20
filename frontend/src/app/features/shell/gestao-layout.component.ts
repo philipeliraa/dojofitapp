@@ -21,6 +21,7 @@ import { AuthService } from '../../core/services/auth.service';
           <a routerLink="/gestao/aulas" routerLinkActive="text-brand-blue font-medium" class="whitespace-nowrap text-body text-secondary">Aulas</a>
           <a routerLink="/gestao/planos" routerLinkActive="text-brand-blue font-medium" class="whitespace-nowrap text-body text-secondary">Planos</a>
           <a routerLink="/gestao/contratos" routerLinkActive="text-brand-blue font-medium" class="whitespace-nowrap text-body text-secondary">Contratos</a>
+          <a routerLink="/gestao/modalidades" routerLinkActive="text-brand-blue font-medium" class="whitespace-nowrap text-body text-secondary">Modalidades</a>
         }
       </nav>
       <router-outlet />

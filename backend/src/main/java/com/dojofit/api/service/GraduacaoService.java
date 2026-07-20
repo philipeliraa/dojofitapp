@@ -8,6 +8,7 @@ import com.dojofit.api.model.Faixa;
 import com.dojofit.api.model.Graduacao;
 import com.dojofit.api.model.Modalidade;
 import com.dojofit.api.model.Usuario;
+import com.dojofit.api.model.enums.TipoNotificacao;
 import com.dojofit.api.repository.FaixaRepository;
 import com.dojofit.api.repository.GraduacaoRepository;
 import com.dojofit.api.repository.ModalidadeRepository;
@@ -36,6 +37,7 @@ public class GraduacaoService {
     private final ModalidadeRepository modalidadeRepository;
     private final FaixaRepository faixaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final NotificacaoService notificacaoService;
 
     @Transactional
     public GraduacaoResponse conceder(GraduacaoRequest request, Long concedidaPorId) {
@@ -66,7 +68,14 @@ public class GraduacaoService {
         graduacao.setData(request.data());
         graduacao.setObservacao(request.observacao());
         graduacao.setConcedidaPor(concedidaPor);
-        return GraduacaoResponse.from(graduacaoRepository.save(graduacao));
+        var salva = graduacaoRepository.save(graduacao);
+
+        // Notifica o aluno da nova graduação (docs/06 passo 8)
+        String grauTexto = salva.getGrau() > 0 ? " " + salva.getGrau() + "º grau" : "";
+        String mensagem = "Você foi graduado para " + faixa.getNome() + grauTexto + " em " + modalidade.getNome() + ".";
+        notificacaoService.criar(aluno, TipoNotificacao.GRADUACAO, "Nova graduação!", mensagem, salva.getId());
+
+        return GraduacaoResponse.from(salva);
     }
 
     /** Faixa/grau atual do aluno em cada modalidade onde já foi graduado. */

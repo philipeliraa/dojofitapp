@@ -49,6 +49,7 @@ class ProgressaoIntegrationTest extends AbstractIntegrationTest {
     private Usuario aluno;
     private String professorToken;
     private String alunoToken;
+    private String adminToken;
     private Modalidade jiujitsu;
     private List<Faixa> faixas;
 
@@ -59,6 +60,7 @@ class ProgressaoIntegrationTest extends AbstractIntegrationTest {
         aluno = novoUsuario("aluno-" + suffix, Role.ALUNO);
         professorToken = jwtUtil.generateToken(professor);
         alunoToken = jwtUtil.generateToken(aluno);
+        adminToken = jwtUtil.generateToken(novoUsuario("admin-" + suffix, Role.ADMIN));
 
         // Modalidade e faixas vêm do seed da migração V13
         jiujitsu = modalidadeRepository.findByAtivoTrueOrderByNomeAsc().stream()
@@ -154,6 +156,55 @@ class ProgressaoIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome").value(aluno.getNome()))
                 .andExpect(jsonPath("$.totalCheckins").value(0));
+    }
+
+    @Test
+    @DisplayName("Conceder graduação gera notificação in-app para o aluno")
+    void concederGeraNotificacao() throws Exception {
+        Faixa azul = faixas.get(1);
+
+        mockMvc.perform(post("/api/graduacoes")
+                        .header("Authorization", "Bearer " + professorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoGraduacao(azul, 1)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/notificacoes").header("Authorization", "Bearer " + alunoToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].tipo").value("GRADUACAO"))
+                .andExpect(jsonPath("$[0].lida").value(false));
+
+        mockMvc.perform(get("/api/notificacoes/nao-lidas").header("Authorization", "Bearer " + alunoToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(1));
+    }
+
+    @Test
+    @DisplayName("Admin cria modalidade e faixa; Professor não pode configurar")
+    void configuracaoRestritaAoAdmin() throws Exception {
+        // Admin cria uma modalidade
+        mockMvc.perform(post("/api/modalidades")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Muay Thai\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Muay Thai"));
+
+        // Admin adiciona uma faixa na modalidade seed
+        mockMvc.perform(post("/api/modalidades/" + jiujitsu.getId() + "/faixas")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Coral\",\"cor\":\"PRETA\",\"ordem\":6,\"grausMax\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Coral"));
+
+        // Professor não pode configurar
+        mockMvc.perform(post("/api/modalidades")
+                        .header("Authorization", "Bearer " + professorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Judo\"}"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

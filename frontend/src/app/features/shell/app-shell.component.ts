@@ -2,6 +2,7 @@ import { Component, computed } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DojofitAvatarComponent } from '../../shared/components/base/dojofit-avatar.component';
+import { NotificacaoBellComponent } from '../notificacoes/notificacao-bell.component';
 import { iniciaisDoNome } from '../../core/utils/nome.util';
 
 interface NavItem {
@@ -20,7 +21,7 @@ interface NavItem {
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, DojofitAvatarComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, DojofitAvatarComponent, NotificacaoBellComponent],
   template: `
     <div class="min-h-screen bg-surface-body pb-16">
       <header class="flex items-center justify-between bg-brand-navy px-4 py-3">
@@ -36,6 +37,7 @@ interface NavItem {
         </div>
 
         <div class="flex items-center gap-3">
+          <app-notificacao-bell />
           @if (initials(); as i) {
             <dojofit-avatar [initials]="i" size="sm" />
           }

@@ -22,8 +22,8 @@ describe('GestaoLayoutComponent', () => {
     return Array.from(fixture.nativeElement.querySelectorAll('nav a')).map((el: any) => el.textContent.trim());
   }
 
-  it('Admin vê todas as abas de Gestão (incluindo Alunos)', () => {
-    expect(setup('ADMIN')).toEqual(['Alunos', 'Usuários', 'Turmas', 'Aulas', 'Planos', 'Contratos']);
+  it('Admin vê todas as abas de Gestão (incluindo Alunos e Modalidades)', () => {
+    expect(setup('ADMIN')).toEqual(['Alunos', 'Usuários', 'Turmas', 'Aulas', 'Planos', 'Contratos', 'Modalidades']);
   });
 
   it('Professor vê apenas a aba Alunos (acesso parcial, docs/02 §2)', () => {

@@ -36,6 +36,7 @@ export const routes: Routes = [
           { path: 'aulas', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/turmas/aula-management.component').then(m => m.AulaManagementComponent) },
           { path: 'planos', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/contratos/plano-list.component').then(m => m.PlanoListComponent) },
           { path: 'contratos', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/contratos/contrato-list.component').then(m => m.ContratoListComponent) },
+          { path: 'modalidades', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./features/gestao/modalidades/modalidade-list.component').then(m => m.ModalidadeListComponent) },
         ],
       },
     ],

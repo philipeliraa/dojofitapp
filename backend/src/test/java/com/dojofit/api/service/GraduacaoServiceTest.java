@@ -8,6 +8,7 @@ import com.dojofit.api.model.Modalidade;
 import com.dojofit.api.model.Usuario;
 import com.dojofit.api.model.enums.CorFaixa;
 import com.dojofit.api.model.enums.Role;
+import com.dojofit.api.model.enums.TipoNotificacao;
 import com.dojofit.api.repository.FaixaRepository;
 import com.dojofit.api.repository.GraduacaoRepository;
 import com.dojofit.api.repository.ModalidadeRepository;
@@ -40,6 +41,8 @@ class GraduacaoServiceTest {
     private FaixaRepository faixaRepository;
     @Mock
     private UsuarioRepository usuarioRepository;
+    @Mock
+    private NotificacaoService notificacaoService;
 
     @InjectMocks
     private GraduacaoService graduacaoService;
@@ -105,6 +108,8 @@ class GraduacaoServiceTest {
         assertEquals("Azul", response.faixaNome());
         assertEquals(CorFaixa.AZUL, response.cor());
         assertEquals(2, response.grau());
+        // Notifica o aluno da nova graduação (docs/06 passo 8)
+        verify(notificacaoService).criar(eq(aluno), eq(TipoNotificacao.GRADUACAO), any(), any(), any());
     }
 
     @Test
