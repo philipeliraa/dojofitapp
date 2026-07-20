@@ -19,7 +19,7 @@ describe('InicioAlunoComponent', () => {
     checkinsConfirmados: 3, vagasDisponiveis: 7,
   };
 
-  async function setup() {
+  async function setup(progressao: unknown[] = []) {
     TestBed.configureTestingModule({
       imports: [InicioAlunoComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()],
@@ -41,6 +41,7 @@ describe('InicioAlunoComponent', () => {
     httpMock.expectOne(`${environment.apiUrl}/checkins/streak`).flush({
       weeklyStreak: 2, averagePerWeek: 1.5, trainedThisWeek: true, contextualMessage: 'Ritmo forte',
     });
+    httpMock.expectOne(`${environment.apiUrl}/eu/progressao`).flush(progressao);
     fixture.detectChanges();
 
     return { fixture };
@@ -60,6 +61,15 @@ describe('InicioAlunoComponent', () => {
     const { fixture } = await setup();
     expect(fixture.nativeElement.textContent).toContain('Jiu-jitsu');
     expect(fixture.nativeElement.querySelector('dojofit-check-in-button')).toBeTruthy();
+  });
+
+  it('mostra o resumo de progressão (faixa/grau atual) quando há graduação', async () => {
+    const { fixture } = await setup([
+      { modalidadeId: 1, modalidadeNome: 'Jiu-Jitsu', faixaNome: 'Azul', cor: 'AZUL', grau: 2, desde: '2026-01-01' },
+    ]);
+    expect(fixture.nativeElement.querySelector('dojofit-belt-badge')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Azul');
+    expect(fixture.nativeElement.textContent).toContain('2º grau');
   });
 
   it('fazer check-in confirma e atualiza a tela', async () => {

@@ -72,6 +72,8 @@
   /* Sistema de graduação — separado da paleta de marca (docs/03 seção 3).
      Só dojofit-belt-badge pode consumir estes tokens (regra não-negociável). */
   --color-belt-branca: #FAFAF8;
+  /* Faixa branca precisa de borda para não sumir sobre surface.base (docs/03 seção 3) */
+  --color-belt-branca-borda: #B4B2A9;
   --color-belt-azul: #378ADD;
   --color-belt-roxa: #7F77DD;
   --color-belt-marrom: #993C1D;

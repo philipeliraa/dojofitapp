@@ -8,6 +8,9 @@ import { DojofitStreakCardComponent } from '../../shared/components/composed/doj
 import { DojofitClassCardComponent } from '../../shared/components/composed/dojofit-class-card.component';
 import { DojofitCheckInButtonComponent } from '../../shared/components/composed/dojofit-check-in-button.component';
 import { DojofitBadgeComponent } from '../../shared/components/base/dojofit-badge.component';
+import { DojofitBeltBadgeComponent } from '../../shared/components/composed/dojofit-belt-badge.component';
+import { ProgressaoApiService } from '../../core/services/progressao-api.service';
+import { Progressao } from '../../core/models/progressao.model';
 
 /**
  * Início do Aluno (docs/02): jornada pessoal — streak semanal, aulas de
@@ -17,9 +20,17 @@ import { DojofitBadgeComponent } from '../../shared/components/base/dojofit-badg
 @Component({
   selector: 'app-inicio-aluno',
   standalone: true,
-  imports: [DojofitStreakCardComponent, DojofitClassCardComponent, DojofitCheckInButtonComponent, DojofitBadgeComponent],
+  imports: [DojofitStreakCardComponent, DojofitClassCardComponent, DojofitCheckInButtonComponent, DojofitBadgeComponent, DojofitBeltBadgeComponent],
   template: `
     <div>
+      @if (progressao().length > 0) {
+        <div class="mb-4 flex flex-wrap gap-2">
+          @for (p of progressao(); track p.modalidadeId) {
+            <dojofit-belt-badge [beltColor]="p.cor" [degree]="p.grau" [modality]="p.modalidadeNome" />
+          }
+        </div>
+      }
+
       <h2 class="mb-2 text-title text-primary">Aulas de Hoje</h2>
       <p class="mb-4 text-body text-secondary">{{ todayFormatted }}</p>
 
@@ -80,6 +91,7 @@ import { DojofitBadgeComponent } from '../../shared/components/base/dojofit-badg
 })
 export class InicioAlunoComponent implements OnInit {
   aulas = signal<Aula[]>([]);
+  progressao = signal<Progressao[]>([]);
   loading = signal(true);
   checkingIn = signal(false);
   message = signal('');
@@ -90,6 +102,7 @@ export class InicioAlunoComponent implements OnInit {
   constructor(
     private aulaApi: AulaApiService,
     protected checkinService: CheckInService,
+    private progressaoApi: ProgressaoApiService,
     checkinSync: CheckinSyncService,
   ) {
     // Reconciliação pós-sincronização (docs/05 seção 5): sucesso recarrega a
@@ -112,6 +125,7 @@ export class InicioAlunoComponent implements OnInit {
       error: () => this.loading.set(false),
     });
     this.checkinService.carregarResumo();
+    this.progressaoApi.minhaProgressao().subscribe(p => this.progressao.set(p));
   }
 
   /** dojofit-check-in-button emite o mesmo evento para "fazer check-in" e "desfazer" — o estado atual decide qual ação é essa. */
