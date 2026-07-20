@@ -6,6 +6,10 @@ export type DojofitInputType = 'text' | 'email' | 'password' | 'number' | 'date'
  * Camada 1 (docs/04 seção 2): campo de texto base do Dojofit.
  * Two-way binding via model() (Signals — docs/08 seção 4 regra 4):
  * usar [(value)], não [(ngModel)].
+ *
+ * multiline() renderiza um <textarea> com o mesmo estilo do catálogo — usado
+ * por campos de texto longo (ex: conteúdo de aviso/feedback no Mural), sem
+ * introduzir um textarea solto com estilos fora dos tokens.
  */
 @Component({
   selector: 'dojofit-input',
@@ -14,14 +18,27 @@ export type DojofitInputType = 'text' | 'email' | 'password' | 'number' | 'date'
     @if (label()) {
       <label [for]="inputId" class="mb-1 block text-label text-primary">{{ label() }}</label>
     }
-    <input
-      [id]="inputId"
-      [type]="type()"
-      [value]="value()"
-      [disabled]="disabled()"
-      (input)="value.set($any($event.target).value)"
-      [class]="inputClasses()"
-    />
+    @if (multiline()) {
+      <textarea
+        [id]="inputId"
+        [rows]="rows()"
+        [value]="value()"
+        [disabled]="disabled()"
+        [placeholder]="placeholder()"
+        (input)="value.set($any($event.target).value)"
+        [class]="inputClasses()"
+      ></textarea>
+    } @else {
+      <input
+        [id]="inputId"
+        [type]="type()"
+        [value]="value()"
+        [disabled]="disabled()"
+        [placeholder]="placeholder()"
+        (input)="value.set($any($event.target).value)"
+        [class]="inputClasses()"
+      />
+    }
     @if (error()) {
       <p class="mt-1 text-caption text-brand-alert-deep">{{ error() }}</p>
     }
@@ -35,6 +52,9 @@ export class DojofitInputComponent {
   type = input<DojofitInputType>('text');
   error = input<string | null>(null);
   disabled = input(false);
+  placeholder = input('');
+  multiline = input(false);
+  rows = input(3);
 
   value = model('');
 

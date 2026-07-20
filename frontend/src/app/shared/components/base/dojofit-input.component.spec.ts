@@ -6,7 +6,7 @@ import { DojofitInputComponent, DojofitInputType } from './dojofit-input.compone
   standalone: true,
   imports: [DojofitInputComponent],
   template: `
-    <dojofit-input [label]="label" [type]="type" [error]="error" [disabled]="disabled" [(value)]="value" />
+    <dojofit-input [label]="label" [type]="type" [error]="error" [disabled]="disabled" [multiline]="multiline" [(value)]="value" />
   `,
 })
 class HostComponent {
@@ -14,6 +14,7 @@ class HostComponent {
   type: DojofitInputType = 'text';
   error: string | null = null;
   disabled = false;
+  multiline = false;
   value = '';
 }
 
@@ -72,5 +73,26 @@ describe('DojofitInputComponent', () => {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
     expect(fixture.componentInstance.value).toBe('novo@dojofit.com');
+  });
+
+  it('multiline renderiza um textarea no lugar do input', () => {
+    TestBed.configureTestingModule({ imports: [HostComponent] });
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.multiline = true;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('textarea')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('input')).toBeNull();
+  });
+
+  it('digitar no textarea atualiza o value do host (model)', () => {
+    TestBed.configureTestingModule({ imports: [HostComponent] });
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.multiline = true;
+    fixture.detectChanges();
+    const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.value = 'Aviso da academia';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.value).toBe('Aviso da academia');
   });
 });

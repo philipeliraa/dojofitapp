@@ -15,6 +15,7 @@ export const routes: Routes = [
     children: [
       { path: '', loadComponent: () => import('./features/shell/inicio.component').then(m => m.InicioComponent) },
       { path: 'calendario', loadComponent: () => import('./features/shell/calendario.component').then(m => m.CalendarioComponent) },
+      { path: 'mural', loadComponent: () => import('./features/mural/mural.component').then(m => m.MuralComponent) },
       { path: 'perfil', loadComponent: () => import('./features/perfil/perfil.component').then(m => m.PerfilComponent) },
       {
         path: 'gestao',

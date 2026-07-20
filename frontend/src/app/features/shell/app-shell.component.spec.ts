@@ -22,11 +22,12 @@ describe('AppShellComponent', () => {
     return { fixture };
   }
 
-  it('mostra Início, Calendário e Perfil para todos os papéis (docs/02 — uma interface)', () => {
+  it('mostra Início, Calendário, Mural e Perfil para todos os papéis (docs/02 — uma interface)', () => {
     const { fixture } = setup('ALUNO');
     const nav = fixture.nativeElement.querySelector('nav').textContent as string;
     expect(nav).toContain('Início');
     expect(nav).toContain('Calendário');
+    expect(nav).toContain('Mural');
     expect(nav).toContain('Perfil');
   });
 
