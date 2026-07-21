@@ -75,6 +75,7 @@ export class AppShellComponent {
       { path: '/', label: 'Início', icon: '🏠', exact: true },
       { path: '/calendario', label: 'Calendário', icon: '📅', exact: false },
       { path: '/mural', label: 'Mural', icon: '📣', exact: false },
+      { path: '/ranking', label: 'Ranking', icon: '🏆', exact: false },
       { path: '/perfil', label: 'Perfil', icon: '👤', exact: false },
     ];
 

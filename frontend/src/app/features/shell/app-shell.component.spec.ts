@@ -28,6 +28,7 @@ describe('AppShellComponent', () => {
     expect(nav).toContain('Início');
     expect(nav).toContain('Calendário');
     expect(nav).toContain('Mural');
+    expect(nav).toContain('Ranking');
     expect(nav).toContain('Perfil');
   });
 
