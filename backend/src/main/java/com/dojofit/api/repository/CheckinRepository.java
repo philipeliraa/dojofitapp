@@ -1,6 +1,7 @@
 package com.dojofit.api.repository;
 
 import com.dojofit.api.model.Checkin;
+import com.dojofit.api.model.enums.Role;
 import com.dojofit.api.model.enums.StatusCheckin;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,4 +33,19 @@ public interface CheckinRepository extends JpaRepository<Checkin, Long> {
     List<Checkin> findHistoricoByAlunoId(Long alunoId);
 
     long countByAlunoId(Long alunoId);
+
+    /**
+     * Ranking por frequência (docs/09 §9): total de treinos (check-ins que não
+     * são lista de espera) por aluno no período, do maior para o menor.
+     */
+    @Query("""
+        SELECT c.aluno.id AS alunoId, c.aluno.nome AS alunoNome, COUNT(c) AS totalTreinos
+        FROM Checkin c
+        WHERE c.aula.data BETWEEN :inicio AND :fim
+          AND c.status <> 'LISTA_ESPERA'
+          AND c.aluno.role = :role
+        GROUP BY c.aluno.id, c.aluno.nome
+        ORDER BY COUNT(c) DESC, c.aluno.nome ASC
+    """)
+    List<RankingProjection> ranking(LocalDate inicio, LocalDate fim, Role role);
 }
