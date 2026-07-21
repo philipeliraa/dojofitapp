@@ -4,11 +4,14 @@ import com.dojofit.api.exception.BusinessException;
 import com.dojofit.api.model.Aula;
 import com.dojofit.api.model.Checkin;
 import com.dojofit.api.model.Contrato;
+import com.dojofit.api.model.ListaEspera;
 import com.dojofit.api.model.Plano;
 import com.dojofit.api.model.Usuario;
+import com.dojofit.api.model.enums.Role;
 import com.dojofit.api.model.enums.StatusCheckin;
 import com.dojofit.api.model.enums.StatusContrato;
 import com.dojofit.api.model.enums.TipoCheckin;
+import org.springframework.security.access.AccessDeniedException;
 import com.dojofit.api.repository.CheckinRepository;
 import com.dojofit.api.repository.ContratoRepository;
 import com.dojofit.api.repository.ListaEsperaRepository;
@@ -272,5 +275,71 @@ class CheckinServiceTest {
 
         assertThrows(BusinessException.class,
                 () -> checkinService.realizarCheckin(AULA_ID, ALUNO_ID, TipoCheckin.PROPRIO, CLIENT_ID));
+    }
+
+    private Checkin checkinDe(Usuario dono, StatusCheckin status) {
+        var c = new Checkin();
+        c.setId(500L);
+        c.setClientId(UUID.randomUUID());
+        c.setAula(aula);
+        c.setAluno(dono);
+        c.setTipo(TipoCheckin.PROPRIO);
+        c.setStatus(status);
+        return c;
+    }
+
+    @Test
+    @DisplayName("Aluno não pode cancelar o check-in de outro aluno (IDOR)")
+    void rejectsCancelByAnotherStudent() {
+        when(checkinRepository.findById(500L)).thenReturn(Optional.of(checkinDe(aluno, StatusCheckin.CONFIRMADO)));
+        var outro = new Usuario();
+        outro.setId(2L);
+        outro.setRole(Role.ALUNO);
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(outro));
+
+        assertThrows(AccessDeniedException.class, () -> checkinService.cancelarCheckin(500L, 2L));
+        verify(checkinRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Dono cancela o próprio check-in")
+    void ownerCancelsOwnCheckin() {
+        when(checkinRepository.findById(500L)).thenReturn(Optional.of(checkinDe(aluno, StatusCheckin.CONFIRMADO)));
+        when(listaEsperaRepository.findByAulaIdAndAlunoId(AULA_ID, ALUNO_ID)).thenReturn(Optional.empty());
+        when(listaEsperaRepository.findFirstByAulaIdOrderByPosicaoAsc(AULA_ID)).thenReturn(Optional.empty());
+
+        checkinService.cancelarCheckin(500L, ALUNO_ID);
+
+        verify(checkinRepository).delete(any(Checkin.class));
+    }
+
+    @Test
+    @DisplayName("Professor pode cancelar o check-in de um aluno")
+    void staffCancelsStudentCheckin() {
+        when(checkinRepository.findById(500L)).thenReturn(Optional.of(checkinDe(aluno, StatusCheckin.CONFIRMADO)));
+        var professor = new Usuario();
+        professor.setId(9L);
+        professor.setRole(Role.PROFESSOR);
+        when(usuarioRepository.findById(9L)).thenReturn(Optional.of(professor));
+        when(listaEsperaRepository.findByAulaIdAndAlunoId(AULA_ID, ALUNO_ID)).thenReturn(Optional.empty());
+        when(listaEsperaRepository.findFirstByAulaIdOrderByPosicaoAsc(AULA_ID)).thenReturn(Optional.empty());
+
+        checkinService.cancelarCheckin(500L, 9L);
+
+        verify(checkinRepository).delete(any(Checkin.class));
+    }
+
+    @Test
+    @DisplayName("Liberar exceção remove a entrada órfã da lista de espera")
+    void liberarExcecaoRemovesWaitlistEntry() {
+        when(checkinRepository.findById(500L)).thenReturn(Optional.of(checkinDe(aluno, StatusCheckin.LISTA_ESPERA)));
+        when(checkinRepository.save(any(Checkin.class))).thenAnswer(inv -> inv.getArgument(0));
+        var entrada = new ListaEspera();
+        when(listaEsperaRepository.findByAulaIdAndAlunoId(AULA_ID, ALUNO_ID)).thenReturn(Optional.of(entrada));
+
+        var response = checkinService.liberarExcecao(500L);
+
+        assertEquals(StatusCheckin.EXCECAO_LIBERADA.name(), response.status());
+        verify(listaEsperaRepository).delete(entrada);
     }
 }

@@ -6,6 +6,8 @@ import com.dojofit.api.model.Aula;
 import com.dojofit.api.model.Checkin;
 import com.dojofit.api.model.Contrato;
 import com.dojofit.api.model.ListaEspera;
+import com.dojofit.api.model.Usuario;
+import com.dojofit.api.model.enums.Role;
 import com.dojofit.api.model.enums.StatusCheckin;
 import com.dojofit.api.model.enums.StatusContrato;
 import com.dojofit.api.model.enums.TipoCheckin;
@@ -15,6 +17,7 @@ import com.dojofit.api.repository.ListaEsperaRepository;
 import com.dojofit.api.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -133,6 +136,16 @@ public class CheckinService {
         var checkin = checkinRepository.findById(checkinId)
                 .orElseThrow(() -> new EntityNotFoundException("Check-in nao encontrado"));
 
+        // Só o próprio aluno ou a equipe (Professor/Admin) pode cancelar — evita
+        // que um aluno cancele o check-in de outro por id (IDOR).
+        if (!checkin.getAluno().getId().equals(userId)) {
+            Usuario solicitante = usuarioRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario nao encontrado"));
+            if (solicitante.getRole() != Role.PROFESSOR && solicitante.getRole() != Role.ADMIN) {
+                throw new AccessDeniedException("Voce nao pode cancelar este check-in");
+            }
+        }
+
         Long aulaId = checkin.getAula().getId();
         boolean wasConfirmed = checkin.getStatus() == StatusCheckin.CONFIRMADO
                 || checkin.getStatus() == StatusCheckin.EXCECAO_LIBERADA;
@@ -157,6 +170,12 @@ public class CheckinService {
 
         checkin.setStatus(StatusCheckin.EXCECAO_LIBERADA);
         checkinRepository.save(checkin);
+
+        // Liberado deixa de estar na fila: remove entrada órfã de lista de espera
+        // (senão uma futura promoção vai para quem já está dentro, docs/06).
+        listaEsperaRepository.findByAulaIdAndAlunoId(checkin.getAula().getId(), checkin.getAluno().getId())
+                .ifPresent(listaEsperaRepository::delete);
+
         streakCache.invalidate(checkin.getAluno().getId());
         return CheckinResponse.from(checkin);
     }
