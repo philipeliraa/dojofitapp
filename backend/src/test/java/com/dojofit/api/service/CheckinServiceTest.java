@@ -74,8 +74,10 @@ class CheckinServiceTest {
         aula = new Aula();
         aula.setId(AULA_ID);
         aula.setData(LocalDate.now());
-        aula.setHoraInicio(LocalTime.of(19, 0));
-        aula.setHoraFim(LocalTime.of(20, 0));
+        // Janela ampla: a aula padrão nunca está "encerrada", para os testes de
+        // caminho feliz passarem em qualquer horário de execução.
+        aula.setHoraInicio(LocalTime.MIN);
+        aula.setHoraFim(LocalTime.MAX);
         aula.setCapacidadeMaxima(10);
         aula.setCancelada(false);
 
@@ -226,6 +228,38 @@ class CheckinServiceTest {
 
         assertThrows(BusinessException.class,
                 () -> checkinService.realizarCheckin(AULA_ID, ALUNO_ID, TipoCheckin.PROPRIO, CLIENT_ID));
+    }
+
+    @Test
+    @DisplayName("Aula que já encerrou bloqueia o check-in do próprio aluno")
+    void rejectsSelfCheckinWhenClassAlreadyEnded() {
+        aula.setHoraInicio(LocalTime.MIN);
+        aula.setHoraFim(LocalTime.MIN); // encerrada às 00:00 de hoje
+        when(checkinRepository.findByClientId(CLIENT_ID)).thenReturn(Optional.empty());
+        when(aulaService.getAula(AULA_ID)).thenReturn(aula);
+        when(usuarioRepository.findById(ALUNO_ID)).thenReturn(Optional.of(aluno));
+
+        var ex = assertThrows(BusinessException.class,
+                () -> checkinService.realizarCheckin(AULA_ID, ALUNO_ID, TipoCheckin.PROPRIO, CLIENT_ID));
+
+        assertEquals("Esta aula ja encerrou", ex.getMessage());
+        verify(checkinRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Professor pode registrar chamada mesmo após a aula encerrar")
+    void professorCanCheckinAfterClassEnded() {
+        aula.setHoraInicio(LocalTime.MIN);
+        aula.setHoraFim(LocalTime.MIN); // encerrada
+        stubHappyPathUntilContract();
+        when(checkinRepository.findByAulaIdAndAlunoId(AULA_ID, ALUNO_ID)).thenReturn(Optional.empty());
+        when(checkinRepository.countCheckinsInWeek(eq(ALUNO_ID), any(), any())).thenReturn(1L);
+        when(checkinRepository.countByAulaIdAndStatus(eq(AULA_ID), any())).thenReturn(0L);
+        when(checkinRepository.save(any(Checkin.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = checkinService.realizarCheckin(AULA_ID, ALUNO_ID, TipoCheckin.PROFESSOR, CLIENT_ID);
+
+        assertEquals(StatusCheckin.CONFIRMADO.name(), response.status());
     }
 
     @Test

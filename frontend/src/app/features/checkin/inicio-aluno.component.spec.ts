@@ -13,13 +13,15 @@ describe('InicioAlunoComponent', () => {
 
   const hoje = formatDateLocal(new Date());
 
+  // Janela ampla (aula "acontecendo" o dia todo) para não ser filtrada pela
+  // regra de "aula já encerrou" independente da hora em que o teste roda.
   const aula: Aula = {
-    id: 1, turmaId: 1, turmaNome: 'Jiu-jitsu', data: hoje, horaInicio: '19:00', horaFim: '20:00',
+    id: 1, turmaId: 1, turmaNome: 'Jiu-jitsu', data: hoje, horaInicio: '00:00', horaFim: '23:59',
     capacidadeMaxima: 10, professorId: 2, professorNome: 'Prof', cancelada: false, observacao: null,
     checkinsConfirmados: 3, vagasDisponiveis: 7,
   };
 
-  async function setup(progressao: unknown[] = []) {
+  async function setup(progressao: unknown[] = [], aulas: Aula[] = [aula]) {
     TestBed.configureTestingModule({
       imports: [InicioAlunoComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()],
@@ -35,7 +37,7 @@ describe('InicioAlunoComponent', () => {
     const fixture = TestBed.createComponent(InicioAlunoComponent);
     fixture.detectChanges();
 
-    httpMock.expectOne(`${environment.apiUrl}/aulas?data=${hoje}`).flush([aula]);
+    httpMock.expectOne(`${environment.apiUrl}/aulas?data=${hoje}`).flush(aulas);
     httpMock.expectOne(`${environment.apiUrl}/checkins/historico`).flush([]);
     httpMock.expectOne(`${environment.apiUrl}/checkins/semana`).flush({ count: 1, limite: 3 });
     httpMock.expectOne(`${environment.apiUrl}/checkins/streak`).flush({
@@ -61,6 +63,14 @@ describe('InicioAlunoComponent', () => {
     const { fixture } = await setup();
     expect(fixture.nativeElement.textContent).toContain('Jiu-jitsu');
     expect(fixture.nativeElement.querySelector('dojofit-check-in-button')).toBeTruthy();
+  });
+
+  it('não mostra aula que já encerrou nem o botão de check-in (docs/01)', async () => {
+    // horaFim 00:00 já passou em qualquer horário do dia -> determinístico
+    const encerrada: Aula = { ...aula, id: 2, horaInicio: '00:00', horaFim: '00:00' };
+    const { fixture } = await setup([], [encerrada]);
+    expect(fixture.nativeElement.querySelector('dojofit-check-in-button')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Nenhuma aula hoje');
   });
 
   it('mostra o resumo de progressão (faixa/grau atual) quando há graduação', async () => {

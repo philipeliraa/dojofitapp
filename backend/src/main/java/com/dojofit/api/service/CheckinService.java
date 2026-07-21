@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
@@ -58,6 +59,13 @@ public class CheckinService {
         LocalDate today = LocalDate.now();
         if (!aula.getData().equals(today)) {
             throw new BusinessException("Check-in permitido apenas no dia da aula");
+        }
+
+        // Aula que ja encerrou nao aceita check-in do proprio aluno (so no dia e
+        // enquanto acontece). O professor ainda pode registrar a chamada depois.
+        if (tipo == TipoCheckin.PROPRIO
+                && LocalDateTime.of(aula.getData(), aula.getHoraFim()).isBefore(LocalDateTime.now())) {
+            throw new BusinessException("Esta aula ja encerrou");
         }
         Contrato contrato = contratoRepository.findByAlunoIdAndStatus(alunoId, StatusContrato.ATIVO)
                 .orElseThrow(() -> new BusinessException("Voce nao possui contrato ativo. Procure o administrador"));

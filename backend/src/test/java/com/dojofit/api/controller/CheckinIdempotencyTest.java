@@ -88,8 +88,10 @@ class CheckinIdempotencyTest extends AbstractIntegrationTest {
 
         aula = new Aula();
         aula.setData(LocalDate.now());
-        aula.setHoraInicio(LocalTime.of(19, 0));
-        aula.setHoraFim(LocalTime.of(20, 0));
+        // Janela ampla: aula "acontecendo" o dia todo, para o check-in valer em
+        // qualquer horário de execução do teste (regra "aula ja encerrou").
+        aula.setHoraInicio(LocalTime.of(0, 0));
+        aula.setHoraFim(LocalTime.of(23, 59));
         aula.setCapacidadeMaxima(20);
         aula.setProfessor(professor);
         aulaRepository.save(aula);

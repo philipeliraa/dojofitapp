@@ -121,7 +121,7 @@ export class InicioAlunoComponent implements OnInit {
 
   ngOnInit() {
     this.aulaApi.getPorData(this.today).subscribe({
-      next: data => { this.aulas.set(data); this.loading.set(false); },
+      next: data => { this.setAulas(data); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
     this.checkinService.carregarResumo();
@@ -177,7 +177,19 @@ export class InicioAlunoComponent implements OnInit {
   }
 
   private refreshAulas() {
-    this.aulaApi.getPorData(this.today).subscribe(data => this.aulas.set(data));
+    this.aulaApi.getPorData(this.today).subscribe(data => this.setAulas(data));
+  }
+
+  /**
+   * Aulas que já encerraram não aparecem no Início com opção de check-in
+   * (docs/01: só no dia e enquanto acontece). O backend também rejeita.
+   */
+  private setAulas(data: Aula[]) {
+    this.aulas.set(data.filter(a => !this.aulaJaEncerrou(a)));
+  }
+
+  private aulaJaEncerrou(aula: Aula): boolean {
+    return new Date(`${aula.data}T${aula.horaFim}`).getTime() < Date.now();
   }
 
   private showMessage(text: string, type: 'success' | 'error') {
