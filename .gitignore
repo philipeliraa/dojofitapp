@@ -28,6 +28,9 @@ docker-compose.override.yml
 # Logs
 *.log
 
+# Estado do dev.sh (PIDs e logs de execução local)
+.dev/
+
 # Documentação local — não subir ao GitHub (decisão do Philipe, 2026-07-17)
 docs/
 CLAUDE.md
