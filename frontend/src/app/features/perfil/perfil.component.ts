@@ -12,6 +12,8 @@ import { ProgressaoApiService } from '../../core/services/progressao-api.service
 import { Progressao } from '../../core/models/progressao.model';
 import { TecnicaApiService } from '../../core/services/tecnica-api.service';
 import { TecnicaAluno } from '../../core/models/tecnica.model';
+import { CampeonatoApiService } from '../../core/services/campeonato-api.service';
+import { Campeonato, RESULTADO_INFO } from '../../core/models/campeonato.model';
 
 /**
  * Perfil (docs/02): dados pessoais para todos os papéis. Para o Aluno,
@@ -75,6 +77,26 @@ import { TecnicaAluno } from '../../core/models/tecnica.model';
           }
         </dojofit-card>
 
+        <dojofit-card>
+          <h3 class="mb-3 text-label text-primary">Campeonatos e medalhas</h3>
+          @if (campeonatos().length === 0) {
+            <p class="text-body text-secondary">Suas conquistas em campeonatos aparecerão aqui.</p>
+          } @else {
+            <div class="space-y-2">
+              @for (c of campeonatos(); track c.id) {
+                <div>
+                  <p class="text-body text-primary">
+                    <span aria-hidden="true">{{ resultadoInfo[c.resultado].emoji }}</span> {{ c.nome }}
+                  </p>
+                  <p class="text-caption text-secondary">
+                    {{ resultadoInfo[c.resultado].label }} · {{ formatarData(c.data) }}@if (c.categoria) { · {{ c.categoria }}}
+                  </p>
+                </div>
+              }
+            </div>
+          }
+        </dojofit-card>
+
         <app-meu-contrato />
         <app-historico-checkin />
       }
@@ -86,13 +108,21 @@ export class PerfilComponent implements OnInit {
   private checkinService = inject(CheckInService);
   private progressaoApi = inject(ProgressaoApiService);
   private tecnicaApi = inject(TecnicaApiService);
+  private campeonatoApi = inject(CampeonatoApiService);
+
+  protected readonly resultadoInfo = RESULTADO_INFO;
 
   protected readonly initials = computed(() => iniciaisDoNome(this.authService.user()?.nome));
   protected readonly progressao = signal<Progressao[]>([]);
   protected readonly tecnicas = signal<TecnicaAluno[]>([]);
+  protected readonly campeonatos = signal<Campeonato[]>([]);
 
   protected readonly dominadas = computed(() => this.tecnicas().filter(t => t.status === 'DOMINADA'));
   protected readonly emDesenvolvimento = computed(() => this.tecnicas().filter(t => t.status === 'EM_DESENVOLVIMENTO'));
+
+  protected formatarData(iso: string): string {
+    return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
 
   ngOnInit() {
     // Meu Contrato e Histórico consomem weekInfo/historico do CheckInService
@@ -100,6 +130,7 @@ export class PerfilComponent implements OnInit {
       this.checkinService.carregarResumo();
       this.progressaoApi.minhaProgressao().subscribe(p => this.progressao.set(p));
       this.tecnicaApi.minhas().subscribe(t => this.tecnicas.set(t));
+      this.campeonatoApi.meus().subscribe(c => this.campeonatos.set(c));
     }
   }
 }

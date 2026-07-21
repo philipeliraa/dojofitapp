@@ -5,6 +5,7 @@ import { AlunoDetalheComponent } from './aluno-detalhe.component';
 import { AlunoApiService } from '../../../core/services/aluno-api.service';
 import { GraduacaoApiService } from '../../../core/services/graduacao-api.service';
 import { TecnicaApiService } from '../../../core/services/tecnica-api.service';
+import { CampeonatoApiService } from '../../../core/services/campeonato-api.service';
 
 describe('AlunoDetalheComponent', () => {
   const modalidade = { id: 1, nome: 'Jiu-Jitsu', ativo: true };
@@ -27,6 +28,12 @@ describe('AlunoDetalheComponent', () => {
       definirStatus: jest.fn().mockReturnValue(of({})),
       remover: jest.fn().mockReturnValue(of(undefined)),
     };
+    const campeonatoApi = {
+      doAluno: jest.fn().mockReturnValue(of([])),
+      registrar: jest.fn().mockReturnValue(of({})),
+      atualizar: jest.fn().mockReturnValue(of({})),
+      remover: jest.fn().mockReturnValue(of(undefined)),
+    };
 
     TestBed.configureTestingModule({
       imports: [AlunoDetalheComponent],
@@ -34,12 +41,13 @@ describe('AlunoDetalheComponent', () => {
         { provide: AlunoApiService, useValue: alunoApi },
         { provide: GraduacaoApiService, useValue: graduacaoApi },
         { provide: TecnicaApiService, useValue: tecnicaApi },
+        { provide: CampeonatoApiService, useValue: campeonatoApi },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: '5' }) } } },
       ],
     });
     const fixture = TestBed.createComponent(AlunoDetalheComponent);
     fixture.detectChanges();
-    return { fixture, graduacaoApi, tecnicaApi };
+    return { fixture, graduacaoApi, tecnicaApi, campeonatoApi };
   }
 
   it('mostra nome e frequência do aluno', () => {
@@ -89,5 +97,26 @@ describe('AlunoDetalheComponent', () => {
     const { fixture, tecnicaApi } = setup();
     (fixture.componentInstance as any).definirTecnica(100, 'DOMINADA');
     expect(tecnicaApi.definirStatus).toHaveBeenCalledWith(5, 100, 'DOMINADA');
+  });
+
+  it('carrega os campeonatos do aluno ao iniciar', () => {
+    const { campeonatoApi } = setup();
+    expect(campeonatoApi.doAluno).toHaveBeenCalledWith(5);
+  });
+
+  it('registrar campeonato envia o payload com nome, data e resultado', () => {
+    const { fixture, campeonatoApi } = setup();
+    const comp = fixture.componentInstance as any;
+    comp.campNome.set('Copa SP');
+    comp.campData.set('2026-05-10');
+    comp.campResultado.set('OURO');
+    comp.salvarCampeonato();
+    expect(campeonatoApi.registrar).toHaveBeenCalledWith(5, {
+      nome: 'Copa SP',
+      data: '2026-05-10',
+      resultado: 'OURO',
+      categoria: undefined,
+      observacao: undefined,
+    });
   });
 });

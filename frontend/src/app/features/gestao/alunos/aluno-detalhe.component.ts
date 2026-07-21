@@ -12,6 +12,8 @@ import { DojofitBadgeComponent } from '../../../shared/components/base/dojofit-b
 import { DojofitBeltBadgeComponent } from '../../../shared/components/composed/dojofit-belt-badge.component';
 import { TecnicaApiService } from '../../../core/services/tecnica-api.service';
 import { StatusTecnica, Tecnica, TecnicaAluno } from '../../../core/models/tecnica.model';
+import { CampeonatoApiService, CampeonatoPayload } from '../../../core/services/campeonato-api.service';
+import { Campeonato, ResultadoCampeonato, RESULTADO_INFO } from '../../../core/models/campeonato.model';
 
 /**
  * Detalhe do aluno na área de coaching (docs/06 fluxo 3): faixa atual,
@@ -175,6 +177,71 @@ import { StatusTecnica, Tecnica, TecnicaAluno } from '../../../core/models/tecni
         }
       </dojofit-card>
 
+      <dojofit-card>
+        <h3 class="mb-3 text-label text-primary">Campeonatos</h3>
+
+        @if (campeonatos().length > 0) {
+          <div class="mb-4 space-y-2">
+            @for (c of campeonatos(); track c.id) {
+              <div class="flex items-start justify-between gap-2 border-b border-default pb-2 last:border-0">
+                <div>
+                  <p class="text-body text-primary">
+                    <span aria-hidden="true">{{ resultadoInfo[c.resultado].emoji }}</span> {{ c.nome }}
+                  </p>
+                  <p class="text-caption text-secondary">
+                    {{ resultadoInfo[c.resultado].label }} · {{ formatarData(c.data) }}@if (c.categoria) { · {{ c.categoria }}}
+                  </p>
+                  @if (c.observacao) {
+                    <p class="text-caption text-secondary">{{ c.observacao }}</p>
+                  }
+                </div>
+                <div class="shrink-0">
+                  <button type="button" (click)="editarCampeonato(c)" class="text-caption text-brand-blue hover:underline">Editar</button>
+                  <button type="button" (click)="removerCampeonato(c)" class="ml-2 text-caption text-brand-alert hover:underline">Excluir</button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="mb-4 text-body text-secondary">Nenhum campeonato registrado.</p>
+        }
+
+        <div class="border-t border-default pt-3">
+          <p class="mb-2 text-label text-primary">{{ campEditandoId() ? 'Editar campeonato' : 'Novo campeonato' }}</p>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <dojofit-input label="Nome" [value]="campNome()" (valueChange)="campNome.set($event)" />
+            <dojofit-input label="Data" type="date" [value]="campData()" (valueChange)="campData.set($event)" />
+            <div>
+              <label class="mb-1 block text-label text-primary">Resultado</label>
+              <select
+                [value]="campResultado()"
+                (change)="campResultado.set($any($event.target).value)"
+                class="w-full rounded-button border border-default bg-surface-base px-3 py-2 text-body text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-blue"
+              >
+                @for (r of resultados; track r) {
+                  <option [value]="r">{{ resultadoInfo[r].label }}</option>
+                }
+              </select>
+            </div>
+            <dojofit-input label="Categoria (opcional)" [value]="campCategoria()" (valueChange)="campCategoria.set($event)" />
+          </div>
+          <div class="mt-3">
+            <dojofit-input label="Observação (opcional)" [multiline]="true" [rows]="2" [value]="campObservacao()" (valueChange)="campObservacao.set($event)" />
+          </div>
+          @if (erroCamp()) {
+            <p class="mt-2 text-caption text-brand-alert-deep">{{ erroCamp() }}</p>
+          }
+          <div class="mt-3 flex gap-2">
+            <dojofit-button [disabled]="!campNome().trim() || !campData()" (onClick)="salvarCampeonato()">
+              {{ campEditandoId() ? 'Salvar' : 'Adicionar campeonato' }}
+            </dojofit-button>
+            @if (campEditandoId()) {
+              <dojofit-button variant="secondary" (onClick)="resetCampeonatoForm()">Cancelar</dojofit-button>
+            }
+          </div>
+        </div>
+      </dojofit-card>
+
       @if (mensagem()) {
         <div class="fixed bottom-20 left-4 right-4 z-50 rounded-button bg-state-success p-3 text-center text-body font-medium text-white">
           {{ mensagem() }}
@@ -188,8 +255,12 @@ export class AlunoDetalheComponent implements OnInit {
   private readonly alunoApi = inject(AlunoApiService);
   private readonly graduacaoApi = inject(GraduacaoApiService);
   private readonly tecnicaApi = inject(TecnicaApiService);
+  private readonly campeonatoApi = inject(CampeonatoApiService);
 
   private alunoId!: number;
+
+  protected readonly resultadoInfo = RESULTADO_INFO;
+  protected readonly resultados: ResultadoCampeonato[] = ['OURO', 'PRATA', 'BRONZE', 'PARTICIPACAO'];
 
   protected readonly aluno = signal<AlunoDetalhe | null>(null);
   protected readonly progressao = signal<Progressao[]>([]);
@@ -198,6 +269,15 @@ export class AlunoDetalheComponent implements OnInit {
   protected readonly faixas = signal<Faixa[]>([]);
   protected readonly tecnicasCatalogo = signal<Tecnica[]>([]);
   protected readonly tecnicasAluno = signal<TecnicaAluno[]>([]);
+  protected readonly campeonatos = signal<Campeonato[]>([]);
+
+  protected readonly campEditandoId = signal<number | null>(null);
+  protected readonly campNome = signal('');
+  protected readonly campData = signal(new Date().toISOString().slice(0, 10));
+  protected readonly campResultado = signal<ResultadoCampeonato>('OURO');
+  protected readonly campCategoria = signal('');
+  protected readonly campObservacao = signal('');
+  protected readonly erroCamp = signal('');
 
   protected readonly modalidadeId = signal<number | null>(null);
   protected readonly faixaId = signal<number | null>(null);
@@ -227,6 +307,7 @@ export class AlunoDetalheComponent implements OnInit {
     this.alunoApi.detalhe(this.alunoId).subscribe(a => this.aluno.set(a));
     this.recarregarProgressao();
     this.recarregarTecnicasAluno();
+    this.recarregarCampeonatos();
     this.graduacaoApi.modalidades().subscribe(m => {
       this.modalidades.set(m);
       // Academia com uma única modalidade: já seleciona e carrega as faixas
@@ -264,6 +345,60 @@ export class AlunoDetalheComponent implements OnInit {
 
   private recarregarTecnicasAluno() {
     this.tecnicaApi.doAluno(this.alunoId).subscribe(t => this.tecnicasAluno.set(t));
+  }
+
+  protected editarCampeonato(c: Campeonato) {
+    this.campEditandoId.set(c.id);
+    this.campNome.set(c.nome);
+    this.campData.set(c.data);
+    this.campResultado.set(c.resultado);
+    this.campCategoria.set(c.categoria ?? '');
+    this.campObservacao.set(c.observacao ?? '');
+  }
+
+  protected salvarCampeonato() {
+    if (!this.campNome().trim() || !this.campData()) return;
+    const payload: CampeonatoPayload = {
+      nome: this.campNome().trim(),
+      data: this.campData(),
+      resultado: this.campResultado(),
+      categoria: this.campCategoria().trim() || undefined,
+      observacao: this.campObservacao().trim() || undefined,
+    };
+    this.erroCamp.set('');
+
+    const req = this.campEditandoId()
+      ? this.campeonatoApi.atualizar(this.alunoId, this.campEditandoId()!, payload)
+      : this.campeonatoApi.registrar(this.alunoId, payload);
+
+    req.subscribe({
+      next: () => {
+        this.resetCampeonatoForm();
+        this.recarregarCampeonatos();
+      },
+      error: (err) => this.erroCamp.set(err.error?.error || 'Não foi possível salvar o campeonato.'),
+    });
+  }
+
+  protected removerCampeonato(c: Campeonato) {
+    this.campeonatoApi.remover(this.alunoId, c.id).subscribe({
+      next: () => this.recarregarCampeonatos(),
+      error: (err) => this.erroCamp.set(err.error?.error || 'Não foi possível excluir o campeonato.'),
+    });
+  }
+
+  protected resetCampeonatoForm() {
+    this.campEditandoId.set(null);
+    this.campNome.set('');
+    this.campData.set(new Date().toISOString().slice(0, 10));
+    this.campResultado.set('OURO');
+    this.campCategoria.set('');
+    this.campObservacao.set('');
+    this.erroCamp.set('');
+  }
+
+  private recarregarCampeonatos() {
+    this.campeonatoApi.doAluno(this.alunoId).subscribe(c => this.campeonatos.set(c));
   }
 
   protected onFaixa(valor: string) {
