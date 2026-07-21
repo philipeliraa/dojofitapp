@@ -50,6 +50,12 @@ describe('PerfilComponent', () => {
     expect(fixture.nativeElement.querySelector('app-historico-checkin')).toBeTruthy();
   });
 
+  it('Aluno vê a seção de progressão e técnicas (Fase 3)', async () => {
+    const { fixture } = await setup('ALUNO');
+    expect(fixture.nativeElement.textContent).toContain('Minha progressão');
+    expect(fixture.nativeElement.textContent).toContain('Minhas técnicas');
+  });
+
   it('Professor não vê contrato nem histórico de check-in (são do Aluno)', async () => {
     const { fixture } = await setup('PROFESSOR');
     expect(fixture.nativeElement.querySelector('app-meu-contrato')).toBeNull();
