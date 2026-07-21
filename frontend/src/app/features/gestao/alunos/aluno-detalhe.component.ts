@@ -8,7 +8,10 @@ import { Progressao } from '../../../core/models/progressao.model';
 import { DojofitCardComponent } from '../../../shared/components/base/dojofit-card.component';
 import { DojofitButtonComponent } from '../../../shared/components/base/dojofit-button.component';
 import { DojofitInputComponent } from '../../../shared/components/base/dojofit-input.component';
+import { DojofitBadgeComponent } from '../../../shared/components/base/dojofit-badge.component';
 import { DojofitBeltBadgeComponent } from '../../../shared/components/composed/dojofit-belt-badge.component';
+import { TecnicaApiService } from '../../../core/services/tecnica-api.service';
+import { StatusTecnica, Tecnica, TecnicaAluno } from '../../../core/models/tecnica.model';
 
 /**
  * Detalhe do aluno na área de coaching (docs/06 fluxo 3): faixa atual,
@@ -19,7 +22,7 @@ import { DojofitBeltBadgeComponent } from '../../../shared/components/composed/d
 @Component({
   selector: 'app-aluno-detalhe',
   standalone: true,
-  imports: [RouterLink, DojofitCardComponent, DojofitButtonComponent, DojofitInputComponent, DojofitBeltBadgeComponent],
+  imports: [RouterLink, DojofitCardComponent, DojofitButtonComponent, DojofitInputComponent, DojofitBadgeComponent, DojofitBeltBadgeComponent],
   template: `
     <div class="space-y-4">
       <a routerLink="/gestao/alunos" class="text-caption text-brand-blue">← Alunos</a>
@@ -120,6 +123,37 @@ import { DojofitBeltBadgeComponent } from '../../../shared/components/composed/d
       </dojofit-card>
 
       <dojofit-card>
+        <h3 class="mb-3 text-label text-primary">Técnicas</h3>
+        @if (modalidadeId() === null) {
+          <p class="text-body text-secondary">Selecione uma modalidade acima para avaliar as técnicas.</p>
+        } @else if (tecnicasCatalogo().length === 0) {
+          <p class="text-body text-secondary">Nenhuma técnica no catálogo desta modalidade.</p>
+        } @else {
+          <div class="space-y-2">
+            @for (t of tecnicasCatalogo(); track t.id) {
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-default pb-2 last:border-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-body text-primary">{{ t.nome }}</span>
+                  @if (statusDe(t.id); as s) {
+                    <dojofit-badge [tone]="s === 'DOMINADA' ? 'info' : 'neutral'">
+                      {{ s === 'DOMINADA' ? 'Dominada' : 'Em desenvolvimento' }}
+                    </dojofit-badge>
+                  }
+                </div>
+                <div class="flex shrink-0 gap-2">
+                  <button type="button" (click)="definirTecnica(t.id, 'EM_DESENVOLVIMENTO')" class="text-caption text-brand-blue hover:underline">Em desenv.</button>
+                  <button type="button" (click)="definirTecnica(t.id, 'DOMINADA')" class="text-caption text-brand-blue hover:underline">Dominada</button>
+                  @if (statusDe(t.id)) {
+                    <button type="button" (click)="removerTecnica(t.id)" class="text-caption text-secondary hover:underline">Limpar</button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </dojofit-card>
+
+      <dojofit-card>
         <h3 class="mb-3 text-label text-primary">Histórico de graduações</h3>
         @if (historico().length > 0) {
           <div class="space-y-3">
@@ -153,6 +187,7 @@ export class AlunoDetalheComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly alunoApi = inject(AlunoApiService);
   private readonly graduacaoApi = inject(GraduacaoApiService);
+  private readonly tecnicaApi = inject(TecnicaApiService);
 
   private alunoId!: number;
 
@@ -161,6 +196,8 @@ export class AlunoDetalheComponent implements OnInit {
   protected readonly historico = signal<Graduacao[]>([]);
   protected readonly modalidades = signal<Modalidade[]>([]);
   protected readonly faixas = signal<Faixa[]>([]);
+  protected readonly tecnicasCatalogo = signal<Tecnica[]>([]);
+  protected readonly tecnicasAluno = signal<TecnicaAluno[]>([]);
 
   protected readonly modalidadeId = signal<number | null>(null);
   protected readonly faixaId = signal<number | null>(null);
@@ -189,6 +226,7 @@ export class AlunoDetalheComponent implements OnInit {
     this.alunoId = Number(this.route.snapshot.paramMap.get('id'));
     this.alunoApi.detalhe(this.alunoId).subscribe(a => this.aluno.set(a));
     this.recarregarProgressao();
+    this.recarregarTecnicasAluno();
     this.graduacaoApi.modalidades().subscribe(m => {
       this.modalidades.set(m);
       // Academia com uma única modalidade: já seleciona e carrega as faixas
@@ -203,9 +241,29 @@ export class AlunoDetalheComponent implements OnInit {
     this.modalidadeId.set(id);
     this.faixaId.set(null);
     this.faixas.set([]);
+    this.tecnicasCatalogo.set([]);
     if (id !== null) {
       this.graduacaoApi.faixas(id).subscribe(f => this.faixas.set(f));
+      this.tecnicaApi.listar(id).subscribe(t => this.tecnicasCatalogo.set(t));
     }
+  }
+
+  protected statusDe(tecnicaId: number): StatusTecnica | null {
+    return this.tecnicasAluno().find(t => t.tecnicaId === tecnicaId)?.status ?? null;
+  }
+
+  protected definirTecnica(tecnicaId: number, status: StatusTecnica) {
+    this.tecnicaApi.definirStatus(this.alunoId, tecnicaId, status)
+      .subscribe(() => this.recarregarTecnicasAluno());
+  }
+
+  protected removerTecnica(tecnicaId: number) {
+    this.tecnicaApi.remover(this.alunoId, tecnicaId)
+      .subscribe(() => this.recarregarTecnicasAluno());
+  }
+
+  private recarregarTecnicasAluno() {
+    this.tecnicaApi.doAluno(this.alunoId).subscribe(t => this.tecnicasAluno.set(t));
   }
 
   protected onFaixa(valor: string) {

@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { ModalidadeListComponent } from './modalidade-list.component';
 import { ModalidadeApiService } from '../../../core/services/modalidade-api.service';
+import { TecnicaApiService } from '../../../core/services/tecnica-api.service';
 
 describe('ModalidadeListComponent', () => {
   const modalidade = { id: 1, nome: 'Jiu-Jitsu', ativo: true };
   const faixa = { id: 10, modalidadeId: 1, nome: 'Azul', cor: 'AZUL' as const, ordem: 2, grausMax: 4 };
+  const tecnica = { id: 50, modalidadeId: 1, nome: 'Armlock', descricao: null };
 
   function setup() {
     const api = {
@@ -17,13 +19,22 @@ describe('ModalidadeListComponent', () => {
       atualizarFaixa: jest.fn().mockReturnValue(of(faixa)),
       deletarFaixa: jest.fn().mockReturnValue(of(undefined)),
     };
+    const tecnicaApi = {
+      listar: jest.fn().mockReturnValue(of([tecnica])),
+      criar: jest.fn().mockReturnValue(of(tecnica)),
+      atualizar: jest.fn().mockReturnValue(of(tecnica)),
+      deletar: jest.fn().mockReturnValue(of(undefined)),
+    };
     TestBed.configureTestingModule({
       imports: [ModalidadeListComponent],
-      providers: [{ provide: ModalidadeApiService, useValue: api }],
+      providers: [
+        { provide: ModalidadeApiService, useValue: api },
+        { provide: TecnicaApiService, useValue: tecnicaApi },
+      ],
     });
     const fixture = TestBed.createComponent(ModalidadeListComponent);
     fixture.detectChanges();
-    return { fixture, api };
+    return { fixture, api, tecnicaApi };
   }
 
   it('lista as modalidades ao iniciar', () => {
@@ -40,10 +51,21 @@ describe('ModalidadeListComponent', () => {
     expect(comp.novoNome()).toBe('');
   });
 
-  it('selecionar modalidade carrega suas faixas', () => {
-    const { fixture, api } = setup();
+  it('selecionar modalidade carrega faixas e técnicas', () => {
+    const { fixture, api, tecnicaApi } = setup();
     (fixture.componentInstance as any).selecionar(1);
     expect(api.faixas).toHaveBeenCalledWith(1);
+    expect(tecnicaApi.listar).toHaveBeenCalledWith(1);
+  });
+
+  it('adicionar técnica envia o payload com nome', () => {
+    const { fixture, tecnicaApi } = setup();
+    const comp = fixture.componentInstance as any;
+    comp.selecionar(1);
+    comp.tecnicaNome.set('Triângulo');
+    comp.tecnicaDescricao.set('pela guarda');
+    comp.salvarTecnica();
+    expect(tecnicaApi.criar).toHaveBeenCalledWith(1, { nome: 'Triângulo', descricao: 'pela guarda' });
   });
 
   it('adicionar faixa envia o payload com cor e graus', () => {

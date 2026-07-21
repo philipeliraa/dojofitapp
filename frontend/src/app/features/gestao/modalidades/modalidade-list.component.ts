@@ -1,6 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ModalidadeApiService, FaixaPayload } from '../../../core/services/modalidade-api.service';
+import { TecnicaApiService, TecnicaPayload } from '../../../core/services/tecnica-api.service';
 import { Faixa, Modalidade } from '../../../core/models/graduacao.model';
+import { Tecnica } from '../../../core/models/tecnica.model';
 import { CorFaixa } from '../../../core/models/progressao.model';
 import { DojofitCardComponent } from '../../../shared/components/base/dojofit-card.component';
 import { DojofitButtonComponent } from '../../../shared/components/base/dojofit-button.component';
@@ -97,12 +99,57 @@ import { DojofitBeltBadgeComponent } from '../../../shared/components/composed/d
             </div>
           </div>
         </dojofit-card>
+
+        <dojofit-card>
+          <h3 class="mb-3 text-label text-primary">Catálogo de técnicas de {{ m.nome }}</h3>
+
+          @if (tecnicas().length > 0) {
+            <div class="mb-4 space-y-2">
+              @for (t of tecnicas(); track t.id) {
+                <div class="flex items-center justify-between gap-2 border-b border-default pb-2 last:border-0">
+                  <div>
+                    <p class="text-body text-primary">{{ t.nome }}</p>
+                    @if (t.descricao) {
+                      <p class="text-caption text-secondary">{{ t.descricao }}</p>
+                    }
+                  </div>
+                  <div class="shrink-0">
+                    <button type="button" (click)="editarTecnica(t)" class="text-caption text-brand-blue hover:underline">Editar</button>
+                    <button type="button" (click)="excluirTecnica(t)" class="ml-2 text-caption text-brand-alert hover:underline">Excluir</button>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="mb-4 text-body text-secondary">Nenhuma técnica no catálogo desta modalidade.</p>
+          }
+
+          <div class="border-t border-default pt-3">
+            <p class="mb-2 text-label text-primary">{{ editandoTecnicaId() ? 'Editar técnica' : 'Nova técnica' }}</p>
+            <div class="space-y-3">
+              <dojofit-input label="Nome" [value]="tecnicaNome()" (valueChange)="tecnicaNome.set($event)" />
+              <dojofit-input label="Descrição (opcional)" [multiline]="true" [rows]="2" [value]="tecnicaDescricao()" (valueChange)="tecnicaDescricao.set($event)" />
+            </div>
+            @if (erroTecnica()) {
+              <p class="mt-2 text-caption text-brand-alert-deep">{{ erroTecnica() }}</p>
+            }
+            <div class="mt-3 flex gap-2">
+              <dojofit-button [disabled]="!tecnicaNome().trim()" (onClick)="salvarTecnica()">
+                {{ editandoTecnicaId() ? 'Salvar' : 'Adicionar técnica' }}
+              </dojofit-button>
+              @if (editandoTecnicaId()) {
+                <dojofit-button variant="secondary" (onClick)="resetTecnicaForm()">Cancelar</dojofit-button>
+              }
+            </div>
+          </div>
+        </dojofit-card>
       }
     </div>
   `,
 })
 export class ModalidadeListComponent implements OnInit {
   private readonly api = inject(ModalidadeApiService);
+  private readonly tecnicaApi = inject(TecnicaApiService);
 
   protected readonly cores: CorFaixa[] = ['BRANCA', 'AZUL', 'ROXA', 'MARROM', 'PRETA'];
 
@@ -111,6 +158,12 @@ export class ModalidadeListComponent implements OnInit {
   protected readonly faixas = signal<Faixa[]>([]);
   protected readonly novoNome = signal('');
   protected readonly erro = signal('');
+
+  protected readonly tecnicas = signal<Tecnica[]>([]);
+  protected readonly editandoTecnicaId = signal<number | null>(null);
+  protected readonly tecnicaNome = signal('');
+  protected readonly tecnicaDescricao = signal('');
+  protected readonly erroTecnica = signal('');
 
   protected readonly editandoFaixaId = signal<number | null>(null);
   protected readonly faixaNome = signal('');
@@ -138,7 +191,9 @@ export class ModalidadeListComponent implements OnInit {
   protected selecionar(id: number) {
     this.selecionadaId.set(id);
     this.resetFaixaForm();
+    this.resetTecnicaForm();
     this.api.faixas(id).subscribe(f => this.faixas.set(f));
+    this.tecnicaApi.listar(id).subscribe(t => this.tecnicas.set(t));
   }
 
   protected editarFaixa(f: Faixa) {
@@ -189,6 +244,50 @@ export class ModalidadeListComponent implements OnInit {
     this.faixaOrdem.set('1');
     this.faixaGrausMax.set('4');
     this.erro.set('');
+  }
+
+  protected editarTecnica(t: Tecnica) {
+    this.editandoTecnicaId.set(t.id);
+    this.tecnicaNome.set(t.nome);
+    this.tecnicaDescricao.set(t.descricao ?? '');
+  }
+
+  protected salvarTecnica() {
+    const modalidadeId = this.selecionadaId();
+    if (modalidadeId === null || !this.tecnicaNome().trim()) return;
+    const payload: TecnicaPayload = {
+      nome: this.tecnicaNome().trim(),
+      descricao: this.tecnicaDescricao().trim() || undefined,
+    };
+    this.erroTecnica.set('');
+
+    const req = this.editandoTecnicaId()
+      ? this.tecnicaApi.atualizar(modalidadeId, this.editandoTecnicaId()!, payload)
+      : this.tecnicaApi.criar(modalidadeId, payload);
+
+    req.subscribe({
+      next: () => {
+        this.resetTecnicaForm();
+        this.tecnicaApi.listar(modalidadeId).subscribe(t => this.tecnicas.set(t));
+      },
+      error: (err) => this.erroTecnica.set(err.error?.error || 'Não foi possível salvar a técnica.'),
+    });
+  }
+
+  protected excluirTecnica(t: Tecnica) {
+    const modalidadeId = this.selecionadaId();
+    if (modalidadeId === null) return;
+    this.tecnicaApi.deletar(modalidadeId, t.id).subscribe({
+      next: () => this.tecnicaApi.listar(modalidadeId).subscribe(list => this.tecnicas.set(list)),
+      error: (err) => this.erroTecnica.set(err.error?.error || 'Não foi possível excluir a técnica.'),
+    });
+  }
+
+  protected resetTecnicaForm() {
+    this.editandoTecnicaId.set(null);
+    this.tecnicaNome.set('');
+    this.tecnicaDescricao.set('');
+    this.erroTecnica.set('');
   }
 
   private carregarModalidades() {

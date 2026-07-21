@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { AlunoDetalheComponent } from './aluno-detalhe.component';
 import { AlunoApiService } from '../../../core/services/aluno-api.service';
 import { GraduacaoApiService } from '../../../core/services/graduacao-api.service';
+import { TecnicaApiService } from '../../../core/services/tecnica-api.service';
 
 describe('AlunoDetalheComponent', () => {
   const modalidade = { id: 1, nome: 'Jiu-Jitsu', ativo: true };
@@ -20,18 +21,25 @@ describe('AlunoDetalheComponent', () => {
       progressaoDoAluno: jest.fn().mockReturnValue(of([])),
       historicoDoAluno: jest.fn().mockReturnValue(of([])),
     };
+    const tecnicaApi = {
+      doAluno: jest.fn().mockReturnValue(of([])),
+      listar: jest.fn().mockReturnValue(of([{ id: 100, modalidadeId: 1, nome: 'Armlock', descricao: null }])),
+      definirStatus: jest.fn().mockReturnValue(of({})),
+      remover: jest.fn().mockReturnValue(of(undefined)),
+    };
 
     TestBed.configureTestingModule({
       imports: [AlunoDetalheComponent],
       providers: [
         { provide: AlunoApiService, useValue: alunoApi },
         { provide: GraduacaoApiService, useValue: graduacaoApi },
+        { provide: TecnicaApiService, useValue: tecnicaApi },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: '5' }) } } },
       ],
     });
     const fixture = TestBed.createComponent(AlunoDetalheComponent);
     fixture.detectChanges();
-    return { fixture, graduacaoApi };
+    return { fixture, graduacaoApi, tecnicaApi };
   }
 
   it('mostra nome e frequência do aluno', () => {
@@ -68,5 +76,18 @@ describe('AlunoDetalheComponent', () => {
       data: '2026-07-19',
       observacao: undefined,
     });
+  });
+
+  it('carrega o catálogo de técnicas da modalidade selecionada', () => {
+    const { fixture, tecnicaApi } = setup();
+    expect(tecnicaApi.doAluno).toHaveBeenCalledWith(5);
+    expect(tecnicaApi.listar).toHaveBeenCalledWith(1);
+    expect(fixture.nativeElement.textContent).toContain('Armlock');
+  });
+
+  it('definir status de técnica chama a API com o status escolhido', () => {
+    const { fixture, tecnicaApi } = setup();
+    (fixture.componentInstance as any).definirTecnica(100, 'DOMINADA');
+    expect(tecnicaApi.definirStatus).toHaveBeenCalledWith(5, 100, 'DOMINADA');
   });
 });
