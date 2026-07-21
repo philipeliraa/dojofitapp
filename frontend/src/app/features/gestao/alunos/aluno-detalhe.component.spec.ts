@@ -6,6 +6,7 @@ import { AlunoApiService } from '../../../core/services/aluno-api.service';
 import { GraduacaoApiService } from '../../../core/services/graduacao-api.service';
 import { TecnicaApiService } from '../../../core/services/tecnica-api.service';
 import { CampeonatoApiService } from '../../../core/services/campeonato-api.service';
+import { AvaliacaoApiService } from '../../../core/services/avaliacao-api.service';
 
 describe('AlunoDetalheComponent', () => {
   const modalidade = { id: 1, nome: 'Jiu-Jitsu', ativo: true };
@@ -34,6 +35,12 @@ describe('AlunoDetalheComponent', () => {
       atualizar: jest.fn().mockReturnValue(of({})),
       remover: jest.fn().mockReturnValue(of(undefined)),
     };
+    const avaliacaoApi = {
+      doAluno: jest.fn().mockReturnValue(of([])),
+      registrar: jest.fn().mockReturnValue(of({})),
+      atualizar: jest.fn().mockReturnValue(of({})),
+      remover: jest.fn().mockReturnValue(of(undefined)),
+    };
 
     TestBed.configureTestingModule({
       imports: [AlunoDetalheComponent],
@@ -42,12 +49,13 @@ describe('AlunoDetalheComponent', () => {
         { provide: GraduacaoApiService, useValue: graduacaoApi },
         { provide: TecnicaApiService, useValue: tecnicaApi },
         { provide: CampeonatoApiService, useValue: campeonatoApi },
+        { provide: AvaliacaoApiService, useValue: avaliacaoApi },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: '5' }) } } },
       ],
     });
     const fixture = TestBed.createComponent(AlunoDetalheComponent);
     fixture.detectChanges();
-    return { fixture, graduacaoApi, tecnicaApi, campeonatoApi };
+    return { fixture, graduacaoApi, tecnicaApi, campeonatoApi, avaliacaoApi };
   }
 
   it('mostra nome e frequência do aluno', () => {
@@ -117,6 +125,25 @@ describe('AlunoDetalheComponent', () => {
       resultado: 'OURO',
       categoria: undefined,
       observacao: undefined,
+    });
+  });
+
+  it('carrega as avaliações do aluno ao iniciar', () => {
+    const { avaliacaoApi } = setup();
+    expect(avaliacaoApi.doAluno).toHaveBeenCalledWith(5);
+  });
+
+  it('registrar avaliação envia tipo, conteúdo e visibilidade', () => {
+    const { fixture, avaliacaoApi } = setup();
+    const comp = fixture.componentInstance as any;
+    comp.avTipo.set('RECOMENDACAO');
+    comp.avConteudo.set('Focar na defesa de guarda');
+    comp.avPublico.set(true);
+    comp.salvarAvaliacao();
+    expect(avaliacaoApi.registrar).toHaveBeenCalledWith(5, {
+      tipo: 'RECOMENDACAO',
+      conteudo: 'Focar na defesa de guarda',
+      publico: true,
     });
   });
 });

@@ -14,6 +14,8 @@ import { TecnicaApiService } from '../../../core/services/tecnica-api.service';
 import { StatusTecnica, Tecnica, TecnicaAluno } from '../../../core/models/tecnica.model';
 import { CampeonatoApiService, CampeonatoPayload } from '../../../core/services/campeonato-api.service';
 import { Campeonato, ResultadoCampeonato, RESULTADO_INFO } from '../../../core/models/campeonato.model';
+import { AvaliacaoApiService, AvaliacaoPayload } from '../../../core/services/avaliacao-api.service';
+import { Avaliacao, TipoAvaliacao, TIPO_AVALIACAO_LABEL } from '../../../core/models/avaliacao.model';
 
 /**
  * Detalhe do aluno na área de coaching (docs/06 fluxo 3): faixa atual,
@@ -242,6 +244,67 @@ import { Campeonato, ResultadoCampeonato, RESULTADO_INFO } from '../../../core/m
         </div>
       </dojofit-card>
 
+      <dojofit-card>
+        <h3 class="mb-3 text-label text-primary">Avaliações e recomendações</h3>
+
+        @if (avaliacoes().length > 0) {
+          <div class="mb-4 space-y-2">
+            @for (a of avaliacoes(); track a.id) {
+              <div class="flex items-start justify-between gap-2 border-b border-default pb-2 last:border-0">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <dojofit-badge tone="info">{{ tipoAvaliacaoLabel[a.tipo] }}</dojofit-badge>
+                    <dojofit-badge>{{ a.publico ? 'Público' : 'Privado' }}</dojofit-badge>
+                  </div>
+                  <p class="mt-1 whitespace-pre-line text-body text-primary">{{ a.conteudo }}</p>
+                  <p class="text-caption text-secondary">{{ a.autorNome }}</p>
+                </div>
+                <div class="shrink-0">
+                  <button type="button" (click)="editarAvaliacao(a)" class="text-caption text-brand-blue hover:underline">Editar</button>
+                  <button type="button" (click)="removerAvaliacao(a)" class="ml-2 text-caption text-brand-alert hover:underline">Excluir</button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="mb-4 text-body text-secondary">Nenhuma avaliação registrada.</p>
+        }
+
+        <div class="border-t border-default pt-3">
+          <p class="mb-2 text-label text-primary">{{ avEditandoId() ? 'Editar registro' : 'Novo registro' }}</p>
+          <div class="mb-3">
+            <label class="mb-1 block text-label text-primary">Tipo</label>
+            <select
+              [value]="avTipo()"
+              (change)="avTipo.set($any($event.target).value)"
+              class="w-full rounded-button border border-default bg-surface-base px-3 py-2 text-body text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-blue"
+            >
+              @for (t of tiposAvaliacao; track t) {
+                <option [value]="t">{{ tipoAvaliacaoLabel[t] }}</option>
+              }
+            </select>
+          </div>
+          <div class="mb-3">
+            <dojofit-input label="Conteúdo" [multiline]="true" [rows]="3" [value]="avConteudo()" (valueChange)="avConteudo.set($event)" />
+          </div>
+          <label class="mb-3 flex items-center gap-2 text-body text-primary">
+            <input type="checkbox" [checked]="avPublico()" (change)="avPublico.set($any($event.target).checked)" />
+            Visível ao aluno (público)
+          </label>
+          @if (erroAv()) {
+            <p class="mb-2 text-caption text-brand-alert-deep">{{ erroAv() }}</p>
+          }
+          <div class="flex gap-2">
+            <dojofit-button [disabled]="!avConteudo().trim()" (onClick)="salvarAvaliacao()">
+              {{ avEditandoId() ? 'Salvar' : 'Adicionar registro' }}
+            </dojofit-button>
+            @if (avEditandoId()) {
+              <dojofit-button variant="secondary" (onClick)="resetAvaliacaoForm()">Cancelar</dojofit-button>
+            }
+          </div>
+        </div>
+      </dojofit-card>
+
       @if (mensagem()) {
         <div class="fixed bottom-20 left-4 right-4 z-50 rounded-button bg-state-success p-3 text-center text-body font-medium text-white">
           {{ mensagem() }}
@@ -256,11 +319,14 @@ export class AlunoDetalheComponent implements OnInit {
   private readonly graduacaoApi = inject(GraduacaoApiService);
   private readonly tecnicaApi = inject(TecnicaApiService);
   private readonly campeonatoApi = inject(CampeonatoApiService);
+  private readonly avaliacaoApi = inject(AvaliacaoApiService);
 
   private alunoId!: number;
 
   protected readonly resultadoInfo = RESULTADO_INFO;
   protected readonly resultados: ResultadoCampeonato[] = ['OURO', 'PRATA', 'BRONZE', 'PARTICIPACAO'];
+  protected readonly tipoAvaliacaoLabel = TIPO_AVALIACAO_LABEL;
+  protected readonly tiposAvaliacao: TipoAvaliacao[] = ['AVALIACAO', 'OBSERVACAO', 'RECOMENDACAO'];
 
   protected readonly aluno = signal<AlunoDetalhe | null>(null);
   protected readonly progressao = signal<Progressao[]>([]);
@@ -278,6 +344,13 @@ export class AlunoDetalheComponent implements OnInit {
   protected readonly campCategoria = signal('');
   protected readonly campObservacao = signal('');
   protected readonly erroCamp = signal('');
+
+  protected readonly avaliacoes = signal<Avaliacao[]>([]);
+  protected readonly avEditandoId = signal<number | null>(null);
+  protected readonly avTipo = signal<TipoAvaliacao>('OBSERVACAO');
+  protected readonly avConteudo = signal('');
+  protected readonly avPublico = signal(false);
+  protected readonly erroAv = signal('');
 
   protected readonly modalidadeId = signal<number | null>(null);
   protected readonly faixaId = signal<number | null>(null);
@@ -308,6 +381,7 @@ export class AlunoDetalheComponent implements OnInit {
     this.recarregarProgressao();
     this.recarregarTecnicasAluno();
     this.recarregarCampeonatos();
+    this.recarregarAvaliacoes();
     this.graduacaoApi.modalidades().subscribe(m => {
       this.modalidades.set(m);
       // Academia com uma única modalidade: já seleciona e carrega as faixas
@@ -399,6 +473,54 @@ export class AlunoDetalheComponent implements OnInit {
 
   private recarregarCampeonatos() {
     this.campeonatoApi.doAluno(this.alunoId).subscribe(c => this.campeonatos.set(c));
+  }
+
+  protected editarAvaliacao(a: Avaliacao) {
+    this.avEditandoId.set(a.id);
+    this.avTipo.set(a.tipo);
+    this.avConteudo.set(a.conteudo);
+    this.avPublico.set(a.publico);
+  }
+
+  protected salvarAvaliacao() {
+    if (!this.avConteudo().trim()) return;
+    const payload: AvaliacaoPayload = {
+      tipo: this.avTipo(),
+      conteudo: this.avConteudo().trim(),
+      publico: this.avPublico(),
+    };
+    this.erroAv.set('');
+
+    const req = this.avEditandoId()
+      ? this.avaliacaoApi.atualizar(this.alunoId, this.avEditandoId()!, payload)
+      : this.avaliacaoApi.registrar(this.alunoId, payload);
+
+    req.subscribe({
+      next: () => {
+        this.resetAvaliacaoForm();
+        this.recarregarAvaliacoes();
+      },
+      error: (err) => this.erroAv.set(err.error?.error || 'Não foi possível salvar o registro.'),
+    });
+  }
+
+  protected removerAvaliacao(a: Avaliacao) {
+    this.avaliacaoApi.remover(this.alunoId, a.id).subscribe({
+      next: () => this.recarregarAvaliacoes(),
+      error: (err) => this.erroAv.set(err.error?.error || 'Não foi possível excluir o registro.'),
+    });
+  }
+
+  protected resetAvaliacaoForm() {
+    this.avEditandoId.set(null);
+    this.avTipo.set('OBSERVACAO');
+    this.avConteudo.set('');
+    this.avPublico.set(false);
+    this.erroAv.set('');
+  }
+
+  private recarregarAvaliacoes() {
+    this.avaliacaoApi.doAluno(this.alunoId).subscribe(a => this.avaliacoes.set(a));
   }
 
   protected onFaixa(valor: string) {

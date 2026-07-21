@@ -14,6 +14,8 @@ import { TecnicaApiService } from '../../core/services/tecnica-api.service';
 import { TecnicaAluno } from '../../core/models/tecnica.model';
 import { CampeonatoApiService } from '../../core/services/campeonato-api.service';
 import { Campeonato, RESULTADO_INFO } from '../../core/models/campeonato.model';
+import { AvaliacaoApiService } from '../../core/services/avaliacao-api.service';
+import { Avaliacao, TIPO_AVALIACAO_LABEL } from '../../core/models/avaliacao.model';
 
 /**
  * Perfil (docs/02): dados pessoais para todos os papéis. Para o Aluno,
@@ -97,6 +99,23 @@ import { Campeonato, RESULTADO_INFO } from '../../core/models/campeonato.model';
           }
         </dojofit-card>
 
+        <dojofit-card>
+          <h3 class="mb-3 text-label text-primary">Do meu professor</h3>
+          @if (avaliacoes().length === 0) {
+            <p class="text-body text-secondary">Recomendações e avaliações compartilhadas pelo seu professor aparecerão aqui.</p>
+          } @else {
+            <div class="space-y-3">
+              @for (a of avaliacoes(); track a.id) {
+                <div class="border-b border-default pb-2 last:border-0">
+                  <dojofit-badge tone="info">{{ tipoAvaliacaoLabel[a.tipo] }}</dojofit-badge>
+                  <p class="mt-1 whitespace-pre-line text-body text-primary">{{ a.conteudo }}</p>
+                  <p class="text-caption text-secondary">{{ a.autorNome }}</p>
+                </div>
+              }
+            </div>
+          }
+        </dojofit-card>
+
         <app-meu-contrato />
         <app-historico-checkin />
       }
@@ -109,13 +128,16 @@ export class PerfilComponent implements OnInit {
   private progressaoApi = inject(ProgressaoApiService);
   private tecnicaApi = inject(TecnicaApiService);
   private campeonatoApi = inject(CampeonatoApiService);
+  private avaliacaoApi = inject(AvaliacaoApiService);
 
   protected readonly resultadoInfo = RESULTADO_INFO;
+  protected readonly tipoAvaliacaoLabel = TIPO_AVALIACAO_LABEL;
 
   protected readonly initials = computed(() => iniciaisDoNome(this.authService.user()?.nome));
   protected readonly progressao = signal<Progressao[]>([]);
   protected readonly tecnicas = signal<TecnicaAluno[]>([]);
   protected readonly campeonatos = signal<Campeonato[]>([]);
+  protected readonly avaliacoes = signal<Avaliacao[]>([]);
 
   protected readonly dominadas = computed(() => this.tecnicas().filter(t => t.status === 'DOMINADA'));
   protected readonly emDesenvolvimento = computed(() => this.tecnicas().filter(t => t.status === 'EM_DESENVOLVIMENTO'));
@@ -131,6 +153,7 @@ export class PerfilComponent implements OnInit {
       this.progressaoApi.minhaProgressao().subscribe(p => this.progressao.set(p));
       this.tecnicaApi.minhas().subscribe(t => this.tecnicas.set(t));
       this.campeonatoApi.meus().subscribe(c => this.campeonatos.set(c));
+      this.avaliacaoApi.minhas().subscribe(a => this.avaliacoes.set(a));
     }
   }
 }
