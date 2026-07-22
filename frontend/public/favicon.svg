@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background squircle (iOS/Android standard) -->
+  <rect x="2" y="2" width="36" height="36" rx="9" fill="#042C53"/>
+  
+  <!-- Logo: crossed belt straps (nó da faixa) -->
+  <g transform="translate(20,20)">
+    <!-- Red strap (diagonal) -->
+    <rect x="-13" y="-3.5" width="26" height="7" rx="3.5" fill="#E24B4A" transform="rotate(20)"/>
+    <!-- White strap (diagonal opposite) -->
+    <rect x="-13" y="-3.5" width="26" height="7" rx="3.5" fill="#FAFAF8" transform="rotate(-20)"/>
+  </g>
+</svg>
