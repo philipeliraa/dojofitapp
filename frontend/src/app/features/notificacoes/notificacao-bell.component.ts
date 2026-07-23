@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { LucideAngularModule, Bell } from 'lucide-angular';
 import { NotificacaoApiService } from '../../core/services/notificacao-api.service';
 import { Notificacao } from '../../core/models/notificacao.model';
 
@@ -10,6 +11,7 @@ import { Notificacao } from '../../core/models/notificacao.model';
 @Component({
   selector: 'app-notificacao-bell',
   standalone: true,
+  imports: [LucideAngularModule],
   template: `
     <div class="relative">
       <button
@@ -18,7 +20,7 @@ import { Notificacao } from '../../core/models/notificacao.model';
         class="relative flex items-center text-white/80 hover:text-white"
         aria-label="Notificações"
       >
-        <span class="text-lg" aria-hidden="true">🔔</span>
+        <lucide-icon [img]="BellIcon" [size]="22" aria-hidden="true" />
         @if (naoLidas() > 0) {
           <span class="absolute -right-1.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-brand-alert px-1 text-caption text-white">
             {{ naoLidas() }}
@@ -50,6 +52,8 @@ import { Notificacao } from '../../core/models/notificacao.model';
 })
 export class NotificacaoBellComponent implements OnInit {
   private readonly api = inject(NotificacaoApiService);
+
+  protected readonly BellIcon = Bell;
 
   protected readonly notificacoes = signal<Notificacao[]>([]);
   protected readonly naoLidas = signal(0);

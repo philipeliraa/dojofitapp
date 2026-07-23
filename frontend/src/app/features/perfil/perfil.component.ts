@@ -47,7 +47,7 @@ import { Avaliacao, TIPO_AVALIACAO_LABEL } from '../../core/models/avaliacao.mod
           @if (progressao().length > 0) {
             <div class="flex flex-wrap gap-2">
               @for (p of progressao(); track p.modalidadeId) {
-                <dojofit-belt-badge [beltColor]="p.cor" [degree]="p.grau" [modality]="p.modalidadeNome" />
+                <dojofit-belt-badge [beltColor]="p.cor" [degree]="p.grau" [modality]="p.modalidadeNome" [showLabel]="true" size="sm" />
               }
             </div>
           } @else {

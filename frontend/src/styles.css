@@ -78,6 +78,11 @@
   --color-belt-roxa: #7F77DD;
   --color-belt-marrom: #993C1D;
   --color-belt-preta: #1C1C1A;
+  /* Ponta do nó de graduação (spec tela-inicio §2): preta nas faixas coloridas
+     (reusa --color-belt-preta); vermelha de graduação na faixa preta — NÃO é o
+     vermelho de marca (brand.alert, reservado a alerta), é cor do sistema de
+     faixas, por isso vive no namespace belt.* consumido só pelo belt-badge. */
+  --color-belt-preta-ponta: #C0142B;
 
   /* Raio de borda (docs/03 seção 6) */
   --radius-card: 12px;
