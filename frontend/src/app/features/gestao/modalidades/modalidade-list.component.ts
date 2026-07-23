@@ -53,7 +53,7 @@ import { DojofitBeltBadgeComponent } from '../../../shared/components/composed/d
                 <div class="flex items-center justify-between gap-2 border-b border-default pb-2 last:border-0">
                   <div class="flex items-center gap-2">
                     <span class="text-caption text-secondary">{{ f.ordem }}.</span>
-                    <dojofit-belt-badge [beltColor]="f.cor" />
+                    <dojofit-belt-badge [beltColor]="f.cor" [showLabel]="true" size="sm" />
                     <span class="text-caption text-secondary">até {{ f.grausMax }} graus</span>
                   </div>
                   <div class="shrink-0">

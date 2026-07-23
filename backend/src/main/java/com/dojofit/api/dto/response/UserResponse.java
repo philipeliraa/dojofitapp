@@ -7,7 +7,8 @@ public record UserResponse(
         String nome,
         String email,
         String role,
-        Boolean ativo
+        Boolean ativo,
+        String academiaNome
 ) {
     public static UserResponse from(Usuario usuario) {
         return new UserResponse(
@@ -15,7 +16,8 @@ public record UserResponse(
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getRole().name(),
-                usuario.getAtivo()
+                usuario.getAtivo(),
+                usuario.getAcademia() != null ? usuario.getAcademia().getNome() : null
         );
     }
 }

@@ -1,5 +1,6 @@
 import { Component, computed } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { LucideAngularModule, LucideIconData, House, Calendar, Megaphone, Trophy, User, Settings } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
 import { DojofitAvatarComponent } from '../../shared/components/base/dojofit-avatar.component';
 import { NotificacaoBellComponent } from '../notificacoes/notificacao-bell.component';
@@ -8,7 +9,7 @@ import { iniciaisDoNome } from '../../core/utils/nome.util';
 interface NavItem {
   path: string;
   label: string;
-  icon: string;
+  icon: LucideIconData;
   exact: boolean;
 }
 
@@ -21,7 +22,7 @@ interface NavItem {
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, DojofitAvatarComponent, NotificacaoBellComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LucideAngularModule, DojofitAvatarComponent, NotificacaoBellComponent],
   template: `
     <div class="min-h-screen bg-surface-body pb-16">
       <header class="flex items-center justify-between bg-brand-navy px-4 py-3">
@@ -57,7 +58,7 @@ interface NavItem {
             [routerLinkActiveOptions]="{ exact: item.exact }"
             class="flex flex-col items-center text-xs text-secondary"
           >
-            <span class="text-lg" aria-hidden="true">{{ item.icon }}</span>
+            <lucide-icon [img]="item.icon" [size]="20" aria-hidden="true" />
             <span>{{ item.label }}</span>
           </a>
         }
@@ -72,18 +73,18 @@ export class AppShellComponent {
 
   protected readonly navItems = computed<NavItem[]>(() => {
     const items: NavItem[] = [
-      { path: '/', label: 'Início', icon: '🏠', exact: true },
-      { path: '/calendario', label: 'Calendário', icon: '📅', exact: false },
-      { path: '/mural', label: 'Mural', icon: '📣', exact: false },
-      { path: '/ranking', label: 'Ranking', icon: '🏆', exact: false },
-      { path: '/perfil', label: 'Perfil', icon: '👤', exact: false },
+      { path: '/', label: 'Início', icon: House, exact: true },
+      { path: '/calendario', label: 'Calendário', icon: Calendar, exact: false },
+      { path: '/mural', label: 'Mural', icon: Megaphone, exact: false },
+      { path: '/ranking', label: 'Ranking', icon: Trophy, exact: false },
+      { path: '/perfil', label: 'Perfil', icon: User, exact: false },
     ];
 
     // Gestão é visível para Professor (acesso parcial: Alunos/coaching) e Admin
     // (completo) — docs/02 seção 2. As seções internas restringem por papel.
     const role = this.authService.role();
     if (role === 'ADMIN' || role === 'PROFESSOR') {
-      items.push({ path: '/gestao', label: 'Gestão', icon: '⚙️', exact: false });
+      items.push({ path: '/gestao', label: 'Gestão', icon: Settings, exact: false });
     }
 
     return items;

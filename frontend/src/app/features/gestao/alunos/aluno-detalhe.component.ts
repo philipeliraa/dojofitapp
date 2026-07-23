@@ -45,7 +45,7 @@ import { Avaliacao, TipoAvaliacao, TIPO_AVALIACAO_LABEL } from '../../../core/mo
           <div class="space-y-2">
             @for (p of progressao(); track p.modalidadeId) {
               <div class="flex items-center gap-2">
-                <dojofit-belt-badge [beltColor]="p.cor" [degree]="p.grau" [modality]="p.modalidadeNome" />
+                <dojofit-belt-badge [beltColor]="p.cor" [degree]="p.grau" [modality]="p.modalidadeNome" [showLabel]="true" size="sm" />
                 <span class="text-caption text-secondary">desde {{ formatarData(p.desde) }}</span>
               </div>
             }
@@ -164,7 +164,7 @@ import { Avaliacao, TipoAvaliacao, TIPO_AVALIACAO_LABEL } from '../../../core/mo
             @for (g of historico(); track g.id) {
               <div class="border-b border-default pb-2 last:border-0">
                 <div class="flex items-center gap-2">
-                  <dojofit-belt-badge [beltColor]="g.cor" [degree]="g.grau" />
+                  <dojofit-belt-badge [beltColor]="g.cor" [degree]="g.grau" [showLabel]="true" size="sm" />
                   <span class="text-caption text-secondary">{{ formatarData(g.data) }}</span>
                 </div>
                 @if (g.observacao) {

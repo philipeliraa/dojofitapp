@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,8 +26,8 @@ public class AdminUsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> create(@Valid @RequestBody UsuarioRequest request) {
-        return ResponseEntity.ok(usuarioService.create(request));
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody UsuarioRequest request, Authentication auth) {
+        return ResponseEntity.ok(usuarioService.create(request, (Long) auth.getPrincipal()));
     }
 
     @PutMapping("/{id}")

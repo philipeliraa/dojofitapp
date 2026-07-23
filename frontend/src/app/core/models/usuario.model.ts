@@ -7,4 +7,6 @@ export interface Usuario {
   role: Role;
   ativo: boolean;
   criadoEm: string;
+  /** Nome da academia (tenant) do usuário — contexto exibido no Início. */
+  academiaNome?: string;
 }

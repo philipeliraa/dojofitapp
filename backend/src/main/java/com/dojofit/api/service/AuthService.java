@@ -52,6 +52,9 @@ public class AuthService {
         usuario.setEmail(convite.getEmail());
         usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
         usuario.setRole(convite.getRole());
+        // Tenant herdado de quem convidou (docs/01: multi-tenant-ready) — o novo
+        // usuário entra na academia do autor do convite.
+        usuario.setAcademia(convite.getCriadoPor().getAcademia());
         usuarioRepository.save(usuario);
 
         conviteService.marcarUsado(convite);
@@ -133,6 +136,8 @@ public class AuthService {
             usuario = new Usuario();
             usuario.setNome(nome);
             usuario.setRole(convite.getRole());
+            // Tenant herdado do autor do convite (docs/01: multi-tenant-ready).
+            usuario.setAcademia(convite.getCriadoPor().getAcademia());
             conviteService.marcarUsado(convite);
         }
 

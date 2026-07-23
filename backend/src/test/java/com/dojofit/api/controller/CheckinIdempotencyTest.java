@@ -65,12 +65,14 @@ class CheckinIdempotencyTest extends AbstractIntegrationTest {
         professor.setNome("Professor Teste");
         professor.setEmail("professor-" + suffix + "@dojofit.com");
         professor.setRole(Role.PROFESSOR);
+        professor.setAcademia(academiaPadrao());
         usuarioRepository.save(professor);
 
         aluno = new Usuario();
         aluno.setNome("Aluno Teste");
         aluno.setEmail("aluno-" + suffix + "@dojofit.com");
         aluno.setRole(Role.ALUNO);
+        aluno.setAcademia(academiaPadrao());
         usuarioRepository.save(aluno);
 
         var plano = new Plano();

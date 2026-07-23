@@ -11,4 +11,13 @@ export interface Progressao {
   cor: CorFaixa;
   grau: number;
   desde: string;
+  /** Máximo de graus da faixa atual (define se o aluno está no último grau). */
+  grausMax: number;
+  /** Check-ins acumulados desde a graduação atual (spec tela-inicio §3). */
+  checkinsNoGrau: number;
+  /** Meta indicativa de check-ins por grau, definida pela academia. */
+  checkinsNecessarios: number;
+  /** Próxima faixa da sequência (nula se já for a última). */
+  proximaFaixaNome?: string;
+  proximaFaixaCor?: CorFaixa;
 }

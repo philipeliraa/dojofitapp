@@ -78,6 +78,7 @@ class RankingIntegrationTest extends AbstractIntegrationTest {
         u.setNome(slug);
         u.setEmail(slug + "@dojofit.com");
         u.setRole(role);
+        u.setAcademia(academiaPadrao());
         return usuarioRepository.save(u);
     }
 

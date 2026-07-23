@@ -9,6 +9,7 @@ import com.dojofit.api.model.Graduacao;
 import com.dojofit.api.model.Modalidade;
 import com.dojofit.api.model.Usuario;
 import com.dojofit.api.model.enums.TipoNotificacao;
+import com.dojofit.api.repository.CheckinRepository;
 import com.dojofit.api.repository.FaixaRepository;
 import com.dojofit.api.repository.GraduacaoRepository;
 import com.dojofit.api.repository.ModalidadeRepository;
@@ -37,6 +38,7 @@ public class GraduacaoService {
     private final ModalidadeRepository modalidadeRepository;
     private final FaixaRepository faixaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final CheckinRepository checkinRepository;
     private final NotificacaoService notificacaoService;
 
     @Transactional
@@ -85,8 +87,37 @@ public class GraduacaoService {
                         .findFirstByAlunoIdAndModalidadeIdOrderByDataDescIdDesc(alunoId, m.getId()))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .map(ProgressaoResponse::from)
+                .map(g -> montarProgressao(alunoId, g))
                 .toList();
+    }
+
+    /**
+     * Enriquece a faixa/grau atual com os dados da barra de progresso do Início
+     * (spec tela-inicio §3): check-ins acumulados desde a graduação atual, meta
+     * indicativa da faixa e a próxima faixa da sequência (para o rótulo
+     * "Rumo à faixa X" quando o aluno está no último grau).
+     */
+    private ProgressaoResponse montarProgressao(Long alunoId, Graduacao g) {
+        Faixa faixa = g.getFaixa();
+        int checkinsNoGrau = (int) checkinRepository.countTreinosDesde(alunoId, g.getData());
+        Faixa proxima = faixaRepository
+                .findByModalidadeIdOrderByOrdemAsc(faixa.getModalidade().getId()).stream()
+                .filter(f -> f.getOrdem() == faixa.getOrdem() + 1)
+                .findFirst()
+                .orElse(null);
+        return new ProgressaoResponse(
+                g.getModalidade().getId(),
+                g.getModalidade().getNome(),
+                faixa.getNome(),
+                faixa.getCor(),
+                g.getGrau(),
+                g.getData(),
+                faixa.getGrausMax(),
+                checkinsNoGrau,
+                faixa.getCheckinsPorGrau(),
+                proxima != null ? proxima.getNome() : null,
+                proxima != null ? proxima.getCor() : null
+        );
     }
 
     /** Linha do tempo de graduações do aluno (docs/01), mais recente primeiro. */

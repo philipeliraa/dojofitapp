@@ -58,6 +58,7 @@ class AuthRefreshTest extends AbstractIntegrationTest {
         aluno.setEmail("sessao-" + UUID.randomUUID().toString().substring(0, 8) + "@dojofit.com");
         aluno.setSenhaHash(passwordEncoder.encode(SENHA));
         aluno.setRole(Role.ALUNO);
+        aluno.setAcademia(academiaPadrao());
         usuarioRepository.save(aluno);
     }
 
