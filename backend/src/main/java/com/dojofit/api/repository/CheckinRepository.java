@@ -24,6 +24,17 @@ public interface CheckinRepository extends JpaRepository<Checkin, Long> {
     @Query("SELECT COUNT(c) FROM Checkin c WHERE c.aluno.id = :alunoId AND c.aula.data BETWEEN :start AND :end AND c.status <> 'LISTA_ESPERA'")
     long countCheckinsInWeek(Long alunoId, LocalDate start, LocalDate end);
 
+    /**
+     * Treinos (check-ins que não são lista de espera) do aluno a partir de uma
+     * data — base da barra de progresso do Início (spec tela-inicio §3): conta
+     * quantos check-ins o aluno acumulou desde a graduação atual (`desde`).
+     * Limitação conhecida: Turma ainda não referencia Modalidade, então a
+     * contagem não é filtrada por modalidade — correto na Fase 1a (modalidade de
+     * referência única); refinar quando Turma ganhar modalidade.
+     */
+    @Query("SELECT COUNT(c) FROM Checkin c WHERE c.aluno.id = :alunoId AND c.aula.data >= :desde AND c.status <> 'LISTA_ESPERA'")
+    long countTreinosDesde(Long alunoId, LocalDate desde);
+
     @Query("SELECT c.aula.data FROM Checkin c WHERE c.aluno.id = :alunoId AND c.status <> 'LISTA_ESPERA'")
     List<LocalDate> findTrainingDatesByAlunoId(Long alunoId);
 

@@ -30,15 +30,21 @@ public class UsuarioService {
         return usuarios.stream().map(UserResponse::from).toList();
     }
 
-    public UserResponse create(UsuarioRequest request) {
+    public UserResponse create(UsuarioRequest request, Long criadorId) {
         if (usuarioRepository.findByEmail(request.email()).isPresent()) {
             throw new BusinessException("Email ja cadastrado");
         }
+
+        // Tenant do novo usuário = academia de quem o cadastra (docs/01:
+        // multi-tenant-ready). O papel é atribuído pela academia, nunca
+        // autodeclarado (CLAUDE.md não-negociável).
+        var criador = getUsuario(criadorId);
 
         var usuario = new Usuario();
         usuario.setNome(request.nome());
         usuario.setEmail(request.email());
         usuario.setRole(Role.valueOf(request.role()));
+        usuario.setAcademia(criador.getAcademia());
         if (request.senha() != null && !request.senha().isEmpty()) {
             usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
         }

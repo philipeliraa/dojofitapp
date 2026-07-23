@@ -38,4 +38,11 @@ public class Faixa {
 
     @Column(name = "graus_max", nullable = false)
     private Integer grausMax;
+
+    // Meta indicativa de check-ins por grau (spec tela-inicio §3): base da barra
+    // de progresso do Início. Indicativa — não promove ninguém automaticamente.
+    // Editar a meta é de outro módulo (spec §7); faixas novas herdam este
+    // default até existir essa ferramenta.
+    @Column(name = "checkins_por_grau", nullable = false)
+    private Integer checkinsPorGrau = 40;
 }

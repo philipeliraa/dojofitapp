@@ -9,6 +9,7 @@ import com.dojofit.api.model.Usuario;
 import com.dojofit.api.model.enums.CorFaixa;
 import com.dojofit.api.model.enums.Role;
 import com.dojofit.api.model.enums.TipoNotificacao;
+import com.dojofit.api.repository.CheckinRepository;
 import com.dojofit.api.repository.FaixaRepository;
 import com.dojofit.api.repository.GraduacaoRepository;
 import com.dojofit.api.repository.ModalidadeRepository;
@@ -41,6 +42,8 @@ class GraduacaoServiceTest {
     private FaixaRepository faixaRepository;
     @Mock
     private UsuarioRepository usuarioRepository;
+    @Mock
+    private CheckinRepository checkinRepository;
     @Mock
     private NotificacaoService notificacaoService;
 
@@ -80,6 +83,7 @@ class GraduacaoServiceTest {
         f.setCor(cor);
         f.setOrdem(ordem);
         f.setGrausMax(grausMax);
+        f.setCheckinsPorGrau(40);
         f.setModalidade(m);
         return f;
     }
@@ -162,5 +166,33 @@ class GraduacaoServiceTest {
         assertEquals("Jiu-Jitsu", progressao.get(0).modalidadeNome());
         assertEquals(CorFaixa.AZUL, progressao.get(0).cor());
         assertEquals(3, progressao.get(0).grau());
+    }
+
+    @Test
+    @DisplayName("Progressão traz dados da barra: check-ins no grau, meta e próxima faixa")
+    void progressaoTrazDadosDaBarra() {
+        var roxa = faixa(101L, "Roxa", CorFaixa.ROXA, 3, 4, jiujitsu);
+        var grad = new Graduacao();
+        grad.setAluno(aluno);
+        grad.setModalidade(jiujitsu);
+        grad.setFaixa(azul);
+        grad.setGrau(2);
+        grad.setData(LocalDate.of(2026, 6, 1));
+
+        when(modalidadeRepository.findByAtivoTrueOrderByNomeAsc()).thenReturn(List.of(jiujitsu));
+        when(graduacaoRepository.findFirstByAlunoIdAndModalidadeIdOrderByDataDescIdDesc(2L, 10L))
+                .thenReturn(Optional.of(grad));
+        // 18 check-ins acumulados desde a graduação atual (spec §3)
+        when(checkinRepository.countTreinosDesde(2L, LocalDate.of(2026, 6, 1))).thenReturn(18L);
+        // Sequência de faixas para achar a próxima (azul -> roxa)
+        when(faixaRepository.findByModalidadeIdOrderByOrdemAsc(10L)).thenReturn(List.of(azul, roxa));
+
+        var p = graduacaoService.progressaoDoAluno(2L).get(0);
+
+        assertEquals(18, p.checkinsNoGrau());
+        assertEquals(40, p.checkinsNecessarios());
+        assertEquals(4, p.grausMax());
+        assertEquals("Roxa", p.proximaFaixaNome());
+        assertEquals(CorFaixa.ROXA, p.proximaFaixaCor());
     }
 }

@@ -1,5 +1,8 @@
 package com.dojofit.api;
 
+import com.dojofit.api.model.Academia;
+import com.dojofit.api.repository.AcademiaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -27,5 +30,17 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
+    }
+
+    @Autowired
+    private AcademiaRepository academiaRepository;
+
+    /**
+     * Academia (tenant) usada nos testes: a semeada pela migração V18. Todo
+     * usuário persistido precisa de uma (academia_id NOT NULL) — os helpers
+     * novoUsuario de cada teste vinculam esta.
+     */
+    protected Academia academiaPadrao() {
+        return academiaRepository.findAll().stream().findFirst().orElseThrow();
     }
 }

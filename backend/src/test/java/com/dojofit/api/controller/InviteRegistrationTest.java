@@ -48,6 +48,7 @@ class InviteRegistrationTest extends AbstractIntegrationTest {
         admin.setNome("Admin Teste");
         admin.setEmail("admin-" + UUID.randomUUID().toString().substring(0, 8) + "@dojofit.com");
         admin.setRole(Role.ADMIN);
+        admin.setAcademia(academiaPadrao());
         usuarioRepository.save(admin);
         adminToken = jwtUtil.generateToken(admin);
 
@@ -136,6 +137,7 @@ class InviteRegistrationTest extends AbstractIntegrationTest {
         aluno.setNome("Aluno");
         aluno.setEmail("aluno-" + UUID.randomUUID().toString().substring(0, 8) + "@dojofit.com");
         aluno.setRole(Role.ALUNO);
+        aluno.setAcademia(academiaPadrao());
         usuarioRepository.save(aluno);
 
         mockMvc.perform(post("/api/convites")

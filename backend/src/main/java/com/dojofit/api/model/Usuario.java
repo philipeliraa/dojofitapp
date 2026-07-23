@@ -35,6 +35,14 @@ public class Usuario {
     @Column(nullable = false)
     private Role role = Role.ALUNO;
 
+    // Tenant do usuário (docs/01: multi-tenant-ready). Atribuído pela academia
+    // via convite — nunca escolhido pelo usuário. EAGER (referência pequena):
+    // o nome da academia é serializado no UserResponse fora de transação
+    // (login/refresh), então precisa estar sempre carregado.
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "academia_id", nullable = false)
+    private Academia academia;
+
     @Column(nullable = false)
     private Boolean ativo = true;
 
