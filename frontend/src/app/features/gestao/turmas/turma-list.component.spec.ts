@@ -51,4 +51,15 @@ describe('TurmaListComponent', () => {
     httpMock.expectOne(`${environment.apiUrl}/turmas/1/toggle`).flush(null);
     httpMock.expectOne(`${environment.apiUrl}/turmas`).flush([turma]);
   });
+
+  it('nao salva turma com hora fim menor ou igual a hora inicio', () => {
+    const { fixture } = setup();
+    fixture.componentInstance.form = {
+      nome: 'Jiu-jitsu', diaSemana: 'MON', horaInicio: '23:00', horaFim: '00:00',
+      capacidadeMaximaStr: '12', professorId: 2,
+    };
+    fixture.componentInstance.save();
+    expect(fixture.componentInstance.errorMessage()).toContain('meia-noite');
+    httpMock.expectNone(`${environment.apiUrl}/turmas`);
+  });
 });

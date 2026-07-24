@@ -116,6 +116,11 @@ export class TurmaListComponent implements OnInit {
       return;
     }
 
+    if (this.form.horaFim <= this.form.horaInicio) {
+      this.errorMessage.set('Hora fim deve ser depois da hora inicio. Turmas nao podem atravessar a meia-noite.');
+      return;
+    }
+
     const body = { ...this.form, capacidadeMaxima: Number(this.form.capacidadeMaximaStr) };
     const req = this.editingId
       ? this.http.put(`${environment.apiUrl}/turmas/${this.editingId}`, body)

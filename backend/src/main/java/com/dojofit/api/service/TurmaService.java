@@ -2,6 +2,7 @@ package com.dojofit.api.service;
 
 import com.dojofit.api.dto.request.TurmaRequest;
 import com.dojofit.api.dto.response.TurmaResponse;
+import com.dojofit.api.exception.BusinessException;
 import com.dojofit.api.model.Turma;
 import com.dojofit.api.model.enums.DiaSemana;
 import com.dojofit.api.repository.TurmaRepository;
@@ -36,11 +37,15 @@ public class TurmaService {
         var professor = usuarioRepository.findById(request.professorId())
                 .orElseThrow(() -> new EntityNotFoundException("Professor nao encontrado"));
 
+        LocalTime horaInicio = LocalTime.parse(request.horaInicio());
+        LocalTime horaFim = LocalTime.parse(request.horaFim());
+        validarHorario(horaInicio, horaFim);
+
         var turma = new Turma();
         turma.setNome(request.nome());
         turma.setDiaSemana(DiaSemana.valueOf(request.diaSemana()));
-        turma.setHoraInicio(LocalTime.parse(request.horaInicio()));
-        turma.setHoraFim(LocalTime.parse(request.horaFim()));
+        turma.setHoraInicio(horaInicio);
+        turma.setHoraFim(horaFim);
         turma.setCapacidadeMaxima(request.capacidadeMaxima());
         turma.setProfessor(professor);
 
@@ -55,14 +60,27 @@ public class TurmaService {
         var professor = usuarioRepository.findById(request.professorId())
                 .orElseThrow(() -> new EntityNotFoundException("Professor nao encontrado"));
 
+        LocalTime horaInicio = LocalTime.parse(request.horaInicio());
+        LocalTime horaFim = LocalTime.parse(request.horaFim());
+        validarHorario(horaInicio, horaFim);
+
         turma.setNome(request.nome());
         turma.setDiaSemana(DiaSemana.valueOf(request.diaSemana()));
-        turma.setHoraInicio(LocalTime.parse(request.horaInicio()));
-        turma.setHoraFim(LocalTime.parse(request.horaFim()));
+        turma.setHoraInicio(horaInicio);
+        turma.setHoraFim(horaFim);
         turma.setCapacidadeMaxima(request.capacidadeMaxima());
         turma.setProfessor(professor);
 
         return TurmaResponse.from(turmaRepository.save(turma));
+    }
+
+    // Turma nao pode atravessar a meia-noite: Aula so guarda uma data unica
+    // (sem data de termino separada), entao horaFim <= horaInicio faria a aula
+    // parecer encerrada antes mesmo de comecar (bug ao gerar aula 23:00-00:00).
+    private void validarHorario(LocalTime horaInicio, LocalTime horaFim) {
+        if (!horaFim.isAfter(horaInicio)) {
+            throw new BusinessException("Hora fim deve ser depois da hora inicio. Turmas nao podem atravessar a meia-noite");
+        }
     }
 
     @Transactional
